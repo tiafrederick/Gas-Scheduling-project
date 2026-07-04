@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Local canonical store (built from postings; not source of truth in git)
+*.duckdb
+*.duckdb.wal
+data/raw/
+data/warehouse/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,65 @@
+{
+  "_comment": "Hand-labeled GOLD extraction for CGT notice 26092015 (AlexSEG). Doubles as (a) the worked example for docs/extraction-schema.md and (b) an eval target for the notice-extraction step (docs/eval-approach.md). Values transcribed by a human from data/fixtures/cgt_notice_26092015.txt.",
+  "notice": {
+    "tsp_ferc_cid": "C000307",
+    "notice_id": "26092015",
+    "notice_type": "Maintenance",
+    "notice_stat_desc": "Initiate",
+    "critical": true,
+    "subject": "Alexandria and Chicot Compressor Station Maintenance (AlexSEG), July 8-10, 2026",
+    "author": "Dillon Schoolcraft",
+    "post_dt": "2026-07-01T10:49:20",
+    "effective_dt": "2026-07-01T00:00:00",
+    "end_dt": "2026-08-01T00:00:00",
+    "prior_notice_id": null,
+    "source_file": "data/fixtures/cgt_notice_26092015.txt"
+  },
+  "capacity_impact_facts": [
+    {
+      "notice_uid": "C000307:26092015",
+      "tsp_ferc_cid": "C000307",
+      "asset_name": "AlexSEG",
+      "asset_kind": "compressor_segment",
+      "metric": "estimated_capacity_setting",
+      "value_low": 2325000,
+      "value_high": 2450000,
+      "uom": "Dth",
+      "direction": "backhaul",
+      "valid_gas_day_from": "2026-07-08",
+      "valid_gas_day_to": "2026-07-10",
+      "effective_cycle": "TIMELY",
+      "affects_services": ["Primary Firm", "Secondary Firm", "Interruptible"],
+      "source_span": "the backhaul capacity through AlexSEG will be reduced to a level between 2,325,000 - 2,450,000 Dth effective Timely Cycle for Gas Day Wednesday, July 8, 2026",
+      "extraction_method": "manual",
+      "confidence": 0.97
+    },
+    {
+      "notice_uid": "C000307:26092015",
+      "tsp_ferc_cid": "C000307",
+      "asset_name": "AlexSEG",
+      "asset_kind": "compressor_segment",
+      "metric": "design_capacity",
+      "value_low": 2683256,
+      "value_high": 2683256,
+      "uom": "Dth",
+      "direction": "backhaul",
+      "source_span": "Design Capacity: 2,683,256",
+      "extraction_method": "manual",
+      "confidence": 0.99
+    },
+    {
+      "notice_uid": "C000307:26092015",
+      "tsp_ferc_cid": "C000307",
+      "asset_name": "AlexSEG",
+      "asset_kind": "compressor_segment",
+      "metric": "posted_percentage",
+      "value_low": 87,
+      "value_high": 91,
+      "uom": "percent",
+      "direction": "backhaul",
+      "source_span": "Posted Percentage: 87-91%",
+      "extraction_method": "manual",
+      "confidence": 0.99
+    }
+  ]
+}

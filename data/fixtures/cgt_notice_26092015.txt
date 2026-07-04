@@ -1,0 +1,31 @@
+TSP Name: Columbia Gulf Transmission, LLC
+TSP: 007854581
+Notice ID: 26092015
+Notice Type Description: Maintenance
+Notice Stat Desc: Initiate
+Prior Notice:
+Critical: Y
+Reqrd Rsp Desc: No Response Required
+Post: 07/01/26 10:49:20 AM
+Notice Effective: 07/01/26 12:00:00 AM
+Notice End: 08/01/26 12:00:00 AM
+Response:
+Subject: Alexandria and Chicot Compressor Station Maintenance (AlexSEG), July 8-10, 2026
+Author: Dillon Schoolcraft
+
+Notice Text:
+
+Columbia Gulf Transmission LLC (CGT) notifies customers of upcoming maintenance at Alexandria Compressor Station and Chicot Compressor Station scheduled for Wednesday, July 8, 2026, through Friday, July 10, 2026. As a result, the backhaul capacity through AlexSEG will be reduced to a level between 2,325,000 - 2,450,000 Dth effective Timely Cycle for Gas Day Wednesday, July 8, 2026.
+
+CGT anticipates this restriction may result in curtailments to Interruptible, Secondary Firm, and Primary Firm services. Please see the details provided below for more information.
+
+AlexSEG
+- Estimated Capacity Setting: 2,325,000 - 2,450,000 Dth
+- Design Capacity: 2,683,256
+- Posted Percentage: 87-91%
+
+Due to the potential impact to firm service, CGT encourages customers to monitor the scheduled volumes on the Operationally Available Capacity screen on Informational Postings, as nominations can fluctuate based on market conditions.
+
+Reservation Charge Credits (RCCs) will be determined per the process set forth in the General Terms and Conditions, Section 40 of CGT's FERC Gas Tariff (Tariff). By means of this notice, CGT is establishing the 7-day Average Usage Quantity to be the period of June 13-19, 2026, pursuant to the provisions in the Tariff.
+
+Please contact your Customer Services Representative with any questions.

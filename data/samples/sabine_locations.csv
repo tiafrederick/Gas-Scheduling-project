@@ -1,0 +1,42 @@
+TSP,TSP NAME,TSP FERC CID,LOC NAME,LOC,LOC ST ABBREV,LOC CNTY,LOC ZONE,LOC TYPE IND,DIR FLO,LOC STAT IND,EFF DATE,INACT DATE,UP/DN IND,UP/DN NAME,UP/DN ID,UP/DN ID PROP,UP/DN FERC CID IND,UP/DN FERC CID,UP/DN LOC NAME,UP/DN LOC,UPDATE D/T
+137609871,Sabine Pipe Line LLC,C000830,Tejas-Low,37448,TX,Jefferson,Zone 1,INT,R,A,11/1/2014,,Y,KM Tejas Pipeline,879826576,,Y,C000434,Sabpl/KMTejas Sabine to TGPL Jeffer,350574,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,HPL-Jefferson,23762,TX,Jefferson,Zone 1,INT,R,A,10/1/2014,,Y,Houston Pipe Line Company LP,,,Y,C001003,NA,NA,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Centana - Jefferson,23757,TX,Jefferson,Zone 1,INT,B,A,11/1/2014,,Y,"Centana Intrastate Pipeline, LLC",NA,,Y,C000113,Sabine-Rec  Sabine-Del,77461  77464,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,HPL- High Pressure,693157,TX,Jefferson,Zone 1,INT,R,A,11/1/2014,,Y,Houston Pipe Line Company LP,,,Y,C001003,NA,NA,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Petrofina - Jefferson,22835,TX,Jefferson,Zone 1,,D,A,11/1/2014,,,NA,,,,,,NA,12/16/2014
+137609871,Sabine Pipe Line LLC,C000830,KM Texas - High,463541,TX,Jefferson,Zone 1,INT,B,A,11/1/2014,,Y,KM Texas Pipeline,131905205,,Y,C000433,Sabpl/KMTP Jefferson,39802,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,KMTP - Jefferson,222200,TX,Jefferson,Zone 1,INT,B,A,11/1/2014,,Y,KM Texas Pipeline,131905205,,Y,C000433,Sabpl/KMTP Jefferson,39802,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Tejas - High,287775,TX,Jefferson,Zone 1,INT,B,A,10/1/2014,,Y,KM Tejas Pipeline,879826576,,Y,C000434,Sabpl/KMTejas TGPL to Sabine Jeffer,350573,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Targa Frac,287756,LA,Calcasieu,Zone 1,,D,A,11/1/2014,,,NA,,,,,,NA,12/16/2014
+137609871,Sabine Pipe Line LLC,C000830,Calcasieu Power,287755,LA,Calcasieu,Zone 1,,D,A,11/1/2014,,,NA,,,,,,NA,12/16/2014
+137609871,Sabine Pipe Line LLC,C000830,Westlake Petrochem,123547,LA,Calcasieu,Zone 1,END,D,A,11/1/2014,,N,NA,,,N,,,NA,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Enlink - Citgo,287442,LA,Calcasieu,Zone 1,INT,D,A,11/1/2014,,N,NA,,,N,,Citgo Rec,8501031,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Enlink - Calcasieu,294215,LA,Calcasieu,Zone 1,INT,D,A,11/1/2014,,N,NA,,,N,,Sabine,8501030,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Louisiana Gas System,463543,LA,Calcasieu,Zone 1,INT,D,A,11/1/2014,,Y,Targo Midstream Service Limited Partnership,801475463,,N,,Louisiana Gas Systems,463543,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Trunkline Holmwood,482116,LA,Calcasieu,Zone 1,INT,R,A,11/1/2014,,Y,"Trunkline Gas Company, LLC",7933062,,Y,C000251,Sabine @ Lake Charles - Sabine Pipeline,80715,4/1/2016
+137609871,Sabine Pipe Line LLC,C000830,KMLA - Holmwood,879896,LA,Calcasieu,Zone 1,INT,B,A,11/1/2014,,Y,Kinder Morgan Louisiana Pipeline LLC,809611911,,Y,C000231,Sabpl/KMLP Calcasieu,44337,4/1/2016
+137609871,Sabine Pipe Line LLC,C000830,Tennessee Bell City,7376,LA,Calcasieu,Zone 1,INT,D,A,11/1/2014,,Y,"Tennessee Gas Pipeline, L.L.C.",1939164,,Y,C000020,SABPL/TGP Bell City Transport,412012,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,ANR - Lake Arthur,37420,LA,Jefferson Davis,Zone 1,INT,D,A,11/1/2014,,Y,ANR Pipeline Company,6958581,,Y,C000623,West Lake Arthur,8650,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Florida - Kaplan,40535,LA,Vermillion,Zone 1,INT,D,A,11/1/2014,,Y,"Florida Gas Transmission Company, LLC",6924518,,Y,C000255,Sabine - Kaplan,23062,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Acadian - HH,11203,LA,Vermillion,Zone 1,INT,B,A,11/1/2014,,Y,Acadian Gas Pipeline System,135481971,,Y,C000932,Sabine Pipeline - Henry Hub,A3029,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Mayne and Mertz,287757,LA,Calcasieu,Zone 1,WHD,B,A,10/1/2014,,N,NA,,,N,,,NA,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,LRC/Bridgeline - HH,287439,LA,Vermillion,Zone 1,INT,B,A,10/1/2014,,Y,"Bridgeline Holdings, L.P.",,,Y,C000826,BHLP/SAB Henry Hub  SAB/BHLP Henry Hub,846120  846121,9/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Columbia Gulf - HH,11202,LA,Vermillion,Zone 1,INT,B,A,10/1/2014,,Y,"Columbia Gulf Transmission, LLC",7854581,,Y,C000307,Sabine - Henry Hub,519,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Gulf South - HH,112564,LA,Vermillion,Zone 1,INT,B,A,10/1/2014,,Y,"Gulf South Pipeline, LP",78444247,,Y,C000591,Henry Hub (from Sabine)  Henry Hub (to Sabine),010507  010506,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Jefferson Island - HH,287799,LA,Vermillion,Zone 1,INT,B,A,10/1/2014,,Y,Jefferson Island Storage & Hub LLC,121314159,,Y,C001773,Sabine_Pipeline,m6003,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,NGPL - HH,44949,LA,Vermillion,Zone 1,INT,B,A,10/1/2014,,Y,Natural Gas Pipeline Co.,6931794,,Y,C002096,Sabpl/NGPL Henry Hub Vermilion,3592,5/31/2016
+137609871,Sabine Pipe Line LLC,C000830,Sea Robin - HH,11204,LA,Vermillion,Zone 1,INT,R,A,10/1/2014,,Y,"Sea Robin Pipeline Company, LLC",45943644,,Y,C000253,Henry Hub - Sabine 2 - South,94061,8/25/2016
+137609871,Sabine Pipe Line LLC,C000830,SONAT - HH,46786,LA,Vermillion,Zone 1,INT,B,A,10/1/2014,,Y,"Southern Natural Gas Company, L.L.C.",6900518,,Y,C000021,Sabine - Sabine to SNG  Sabine - SNG to Sabine,605200  605210,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Texas Gas - HH,42611,LA,Vermillion,Zone 1,INT,B,A,10/1/2014,,Y,"Texas Gas Transmission, LLC",115972101,,Y,C000592,Henry-Hub,2790,3/20/2017
+137609871,Sabine Pipe Line LLC,C000830,Transco - HH,42613,LA,Vermillion,Zone 1,,D,I,,10/1/2014,,NA,,,,,,NA,9/4/2015
+137609871,Sabine Pipe Line LLC,C000830,Trunkline Del - HH Low Pressure,782835,LA,Vermillion,Zone 1,INT,D,A,10/1/2014,,Y,"Trunkline Gas Company, LLC",7933062,,Y,C000251,Sabine Henry Hub Low Pressure,93058,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Trunkline Rec - HH Low Pressure,11200,LA,Vermillion,Zone 1,INT,R,A,10/1/2014,,Y,"Trunkline Gas Company, LLC",7933062,,Y,C000251,Sabine Henry Hub Low Pressure,93058,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Intra-Hub Transfers,99999,LA,,Zone 1,VIR,B,A,10/1/2014,,N,NA,,,N,,,NA,3/30/2016
+137609871,Sabine Pipe Line LLC,C000830,Payback to Pipe,9999-1,LA,,Zone 1,,D,A,10/1/2014,,,NA,,,,,,NA,12/5/2014
+137609871,Sabine Pipe Line LLC,C000830,Payback to Shipper,9999-2,LA,,Zone 1,,R,A,10/1/2014,,,NA,,,,,,NA,12/5/2014
+137609871,Sabine Pipe Line LLC,C000830,Henry Hub to ML - HH,1526,LA,Vermillion,Zone 1,,B,A,10/1/2014,,,NA,,,,,,NA,1/26/2015
+137609871,Sabine Pipe Line LLC,C000830,ML to Henry Hub - HH,1527,LA,Vermillion,Zone 1,,B,A,10/1/2014,,,NA,,,,,,NA,1/26/2015
+137609871,Sabine Pipe Line LLC,C000830,Transco - Kaplan,42575,LA,Vermillion,Zone 1,,D,I,,11/9/2015,,NA,,,,,,NA,11/9/2015
+137609871,Sabine Pipe Line LLC,C000830,Chalkley - Calcasieu,287800,LA,Calcasieu,Zone 1,,R,I,,11/9/2015,,NA,,,,,,NA,11/9/2015
+137609871,Sabine Pipe Line LLC,C000830,Trunkline HH High Pressure,732835,LA,Vermillion,Zone 1,INT,B,A,10/1/2014,,Y,"Trunkline Gas Company, LLC",7933062,,Y,C000251,Henry Hub High Pressure - TGC - Sabine,80721,6/17/2016
+137609871,Sabine Pipe Line LLC,C000830,Chemical Waste Management,1604,LA,Calcasieu,Zone 1,END,D,A,5/1/2018,,N,N,,,N,N,Chemical Waste Management Inc,,5/22/2018
