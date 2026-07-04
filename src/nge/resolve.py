@@ -44,6 +44,10 @@ SOURCES = [
     ("data/samples/sesh_all_points.csv", SESH_LAYOUT, "SESH InfoPost (real)"),
     ("data/fixtures/cgt_points_sample.csv", SESH_LAYOUT, "CGT fixture (reciprocal of 83004)"),
     ("data/samples/sabine_locations.csv", SABINE_LAYOUT, "Sabine gasnom (real)"),
+    ("data/samples/egan_all_points.csv", SESH_LAYOUT,
+     "Egan Hub Storage InfoPost (real, via Firecrawl 2026-07-04)"),
+    ("data/samples/bobcat_all_points.csv", SESH_LAYOUT,
+     "Bobcat Gas Storage InfoPost (real, via Firecrawl 2026-07-04)"),
 ]
 
 # Minimal company registry so we can recognise a declared counterparty pipeline
@@ -68,6 +72,11 @@ KNOWN_PIPELINES = {
     "C000433": "KM Texas Pipeline",
     "C000434": "KM Tejas Pipeline",
     "C001003": "Houston Pipe Line Company LP",
+    "C000086": "Egan Hub Storage, LLC",
+    "C001706": "Bobcat Gas Storage",
+    "C000623": "ANR Pipeline Company",
+    "C000592": "Texas Gas Transmission, LLC",
+    "C000231": "Kinder Morgan Louisiana Pipeline LLC",
 }
 
 NULLISH = {"", "NA", "N/A", "NONE", "NULL"}

@@ -1,0 +1,8 @@
+{
+  "source": "firecrawl_scrape",
+  "url": "https://linkwc.enbridge.com/Pointdata/EgAllPoints.csv",
+  "retrieved_at": "2026-07-04T23:30:00Z",
+  "sha256": "b32a9d8ea0cc43ce0b79131292a759c09178ae06dd811756dc52f528631b8413",
+  "content_type": "application/octet-stream",
+  "bytes": 2781
+}

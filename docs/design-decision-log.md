@@ -16,19 +16,29 @@ Challenge any of these; that's the point.
 | DDL-009 | **Portfolio commercial reachability** (CGT+SESH+Sabine + direct interconnects, direction flag, no hydraulics) | Accepted (user) | Enough for impact/alternate-path; avoids over-modeling. |
 | DDL-010 | **No graph database**; reachability via recursive SQL / in-memory `networkx` | Accepted | Proven: `nge/reach.py` answers the v1 impact question with a recursive CTE over `interconnect`. |
 | DDL-011 | Stack: **Python + DuckDB + Pydantic** (pdfplumber/networkx as optional extras) | Accepted | DuckDB = zero-ops single-file analytical SQL (recursive CTEs, native CSV/Parquet), portable to Postgres. Core resolution logic + tests stay stdlib-only. |
-| DDL-012 | **Acquisition v2**: automated fetch of **public** EBB pages, gated on the environment's network policy; one Enbridge InfoPost adapter serves **SESH + Egan + Bobcat**, one gasnom adapter serves Sabine. **Confidential shipper-login data (BP storage balances, scheduled quantities) stays manual-drop only; BP credentials never enter the container.** Low cadence (daily/per-cycle); fetched files land in the raw zone with the same provenance as manual drops. | Accepted (user) | Verified 2026-07-04: Egan (`EGHome.asp?Pipe=EG`) and Bobcat (`BGSHome.asp?Pipe=BGS`) post on Enbridge InfoPost — same platform as SESH. All egress from this environment is currently blocked at the proxy (even example.com), so fetching activates only after the user allowlists `infopost.enbridge.com` + `www.gasnom.com` in the environment's network settings. No MCP connector/skill needed (registry checked — nothing relevant exists); built-in fetch + preinstalled Playwright suffice. |
+| DDL-012 | **Acquisition v2**: fetch **public** EBB pages via the Firecrawl MCP connector (a hosted scraper, not subject to this container's egress proxy) — no session restart required. One logical Enbridge InfoPost adapter serves **SESH + Egan + Bobcat**, one gasnom adapter serves Sabine. **Confidential shipper-login data (BP storage balances, scheduled quantities) stays manual-drop only; BP credentials never enter the container.** Fetched files land in `data/raw/<portal>/<date>/` with a `.meta.json` provenance sidecar (source, url, retrieved_at, sha256, content_type, bytes) — same discipline as manual drops. | Accepted (user) | **Superseded original finding**: direct curl/WebFetch egress from this container was blocked even after the user set the domain allowlist to "All domains" (policy binds at container boot). But the **Firecrawl MCP tool reaches these hosts today**, since it fetches from Firecrawl's own infrastructure. Landed 2026-07-04: Egan (`EgAllPoints.csv`, FERC CID **C000086**) and Bobcat (`BGSAllPoints.csv`, FERC CID **C001706**) point catalogs, both real, both on Enbridge InfoPost. `docs/next-session.md` (direct-fetch-in-a-fresh-session) is kept as a **fallback path** for a Firecrawl-free / no-credit-cost future run — not deleted. |
 
 ## Open items
-- **Egan/Bobcat FERC CIDs** — `pipeline` rows carry loud `PENDING-EG` / `PENDING-BGS`
-  placeholder keys; backfill from the FERC CID listing or the portals' own postings in the
-  next (egress-enabled) session, per `docs/next-session.md` Step 2.
-- **Session restart for egress** — user set the domain allowlist to "All domains"
-  (2026-07-04), but egress policy binds at container start; the live-fetch work executes
-  in a **fresh session**. Handoff: `docs/next-session.md`.
-- Storage balance fact shape — design against the first real EG/BGS storage posting
-  (public "storage conditions") + manual-drop balance exports; do not assume format.
+- **CGT (TC eConnects) point catalog** — still only a 1-row fixture (SESH-83004
+  reciprocal). Every Egan/Bobcat/Sabine↔CGT edge resolves at best to
+  `resolved_cid_only` until CGT's real location data is landed. TC eConnects is an
+  untested target for Firecrawl (different platform than InfoPost/gasnom) — try next.
+- **Sabine Hub Services, L.L.C.** — confirmed via web search to be a *distinct* ONEOK
+  legal entity from Sabine Pipe Line LLC (it administers Henry Hub volume tracking;
+  Sabine Pipe Line provides the physical wheeling). gasnom's Sabine Pipe Line portal nav
+  shows no separate Sabine Hub Services section/point-catalog — unresolved whether it
+  has its own public EBB at all, or is purely an accounting/administrative function
+  layered on Sabine Pipe Line's points. Needs a manual check (e.g. oneok.com) or your
+  domain knowledge — do not guess a FERC CID for it.
+- Storage balance fact shape — design against a real EG/BGS storage-conditions posting
+  (public) + manual-drop balance exports; the InfoPost nav confirms Notices/Capacity/
+  Index-of-Customers/Locations exist for Egan+Bobcat, but no storage-inventory-balance
+  page was found in the public nav (consistent with DDL-007: balances are likely behind
+  the LINK shipper login).
 - AlexSEG (and other CGT segments) → point mapping — needs CGT location data parse.
-- `operational_capacity_fact` columns — finalize against a real OAC/OA_MLC table.
+- `operational_capacity_fact` columns — finalize against a real OAC/OA_MLC table
+  (Egan/Bobcat capacity pages are on `rtba.enbridge.com`, a different subdomain/likely
+  JS app — untested).
 - LLM extraction step — the eval harness + regex baseline now exist
   (`src/nge/extract/`); the LLM extractor implements the same interface and must beat the
   baseline on the growing gold set. Needs `ANTHROPIC_API_KEY` in the environment.

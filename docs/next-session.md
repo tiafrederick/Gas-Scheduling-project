@@ -1,10 +1,17 @@
-# Next Session — Phase 3 Live EBB Acquisition (cold-start handoff)
+# Next Session — Phase 3 Live EBB Acquisition (cold-start handoff, FALLBACK PATH)
 
-> **Why this file exists:** the previous session ran in a container whose network egress
-> policy was fixed at startup and blocked ALL outbound web. The user has since set the
-> environment's domain allowlist to "All domains", which applies to **new** sessions.
-> This doc tells a fresh session (or a future you) exactly how to continue. Everything
-> below was decided and approved — don't re-litigate, execute. Context lives in
+> **Status update (2026-07-04, later same day):** live acquisition no longer requires a
+> fresh session — the **Firecrawl MCP connector** reaches these EBB hosts directly from
+> *this* container (it's a hosted scraper, not subject to the container's egress proxy).
+> Egan (`C000086`) and Bobcat (`C001706`) point catalogs were already landed this way; see
+> DDL-012 in `docs/design-decision-log.md`. **This document is now the fallback path** —
+> use it if you want credit-free direct-fetch instead of Firecrawl, or if Firecrawl is
+> ever unavailable. The original rationale is preserved below.
+>
+> The previous session ran in a container whose network egress policy was fixed at startup
+> and blocked ALL outbound web. The user has since set the environment's domain allowlist
+> to "All domains", which applies to **new** sessions. This doc tells a fresh session (or a
+> future you) exactly how to continue with direct fetch. Context lives in
 > `docs/design-decision-log.md` (esp. DDL-006/007/012) and `docs/data-sources.md`.
 
 ## Step 0 — Verify egress actually works now

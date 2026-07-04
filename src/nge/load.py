@@ -22,10 +22,9 @@ from .store import DEFAULT_DB, create_db, table_counts
 
 REPO = R.REPO
 
-# Portfolio registry. Egan/Bobcat FERC CIDs are NOT yet verifiable from landed
-# data (network egress blocked; no EG/BGS exports dropped yet) — they get loud
-# PENDING placeholder keys that the first real drop must replace. Do not join
-# on them; nothing references them yet.
+# Portfolio registry. Egan/Bobcat FERC CIDs backfilled 2026-07-04 from their real
+# InfoPost point-location CSVs (landed via Firecrawl; see data/raw/{egan,bobcat}/
+# 2026-07-04/*.meta.json for provenance).
 PIPELINES = [
     # (ferc_cid, tsp_id, name, short_code, platform, base_url, is_portfolio)
     ("C000307", "007854581", "Columbia Gulf Transmission, LLC", "CGT",
@@ -34,9 +33,9 @@ PIPELINES = [
      "Enbridge InfoPost", "https://infopost.enbridge.com/infopost/SESHHome.asp?Pipe=SESH", True),
     ("C000830", "137609871", "Sabine Pipe Line LLC", "SABINE",
      "gasnom", "https://www.gasnom.com/ip/SABINE/", True),
-    ("PENDING-EG", None, "Egan Hub Storage, LLC", "EGAN",
+    ("C000086", "835460478", "Egan Hub Storage, LLC", "EGAN",
      "Enbridge InfoPost", "https://infopost.enbridge.com/infopost/EGHome.asp?Pipe=EG", True),
-    ("PENDING-BGS", None, "Bobcat Gas Storage", "BOBCAT",
+    ("C001706", "614834559", "Bobcat Gas Storage", "BOBCAT",
      "Enbridge InfoPost", "https://infopost.enbridge.com/infopost/BGSHome.asp?Pipe=BGS", True),
 ]
 

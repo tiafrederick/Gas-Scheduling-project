@@ -57,8 +57,14 @@ acceptable because the data is public. Nomination volumes / positions / trade in
 1. ✅ Phase 0 — architecture discovery + decision log.
 2. ✅ Phase 1 — canonical schema, entity-resolution proof, extraction schema, eval plan.
 3. ✅ Phase 2 — stack locked (Python+DuckDB), canonical store loads, **cited impact
-   analysis works end-to-end** (`nge.reach`), Egan/Bobcat onboarded to the model
-   (public-EBB fetch pending the network allowlist — see `docs/data-sources.md`).
-4. ⬜ Phase 3 — public-EBB fetch adapters (once network allowlisted) + LLM extraction
-   step + more counterparty point catalogs (shrink unresolved edges).
-5. ⬜ Later — minimal operational workspace UI.
+   analysis works end-to-end** (`nge.reach`).
+4. ✅ Phase 3 (partial) — extraction eval harness + regex baseline
+   (`nge.extract`); **live public-EBB data landed via Firecrawl**: Egan Hub Storage
+   (FERC CID `C000086`) and Bobcat Gas Storage (`C001706`) point catalogs, both real,
+   both with provenance in `data/raw/`. New portfolio interconnect discovered:
+   Egan ↔ CGT. Open gaps: CGT's own point catalog (still a 1-row fixture), Sabine Hub
+   Services (distinct entity from Sabine Pipe Line, EBB location unconfirmed) — see
+   `docs/design-decision-log.md` open items.
+5. ⬜ Phase 3 (remaining) — LLM extraction step; CGT (TC eConnects) point catalog;
+   resolve Sabine Hub Services; storage-balance fact schema.
+6. ⬜ Later — minimal operational workspace UI.
