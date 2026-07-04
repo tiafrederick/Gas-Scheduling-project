@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nge"
+version = "0.2.0"
+description = "Natural Gas Scheduling Knowledge Engine — canonical bitemporal store + cited impact analysis"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+# PDF parsing lands in Phase 3 (EBB capacity/notice PDFs). Kept optional because
+# pdfplumber drags in cryptography/cffi, which some sandboxes ship broken.
+pdf = ["pdfplumber>=0.11"]
+graph = ["networkx>=3.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

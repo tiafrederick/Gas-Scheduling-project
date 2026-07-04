@@ -6,8 +6,8 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "spikes", "interconnect_resolution"))
-import resolve  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+from nge import resolve  # noqa: E402
 
 
 class TestInterconnectResolution(unittest.TestCase):

@@ -31,18 +31,21 @@ downstream effects. This engine builds the model *once*, keeps it correct over t
 | [`data/samples/`](data/samples/) · [`data/fixtures/`](data/fixtures/) | Real public CSV exports + AlexSEG notice + gold labels |
 | [`tests/`](tests/) | Round-trip resolution test |
 
-## Run it (zero dependencies — stdlib Python 3.11+)
+## Run it
 ```bash
-# Prove the cross-pipeline interconnect resolves both ways
+pip install duckdb pydantic          # core stack (DDL-011); spike/tests run stdlib-only
+
+# Build the canonical DuckDB store from landed samples/fixtures
+PYTHONPATH=src python3 -m nge.load
+
+# The v1 vertical slice: cited cross-pipeline impact analysis
+PYTHONPATH=src python3 -m nge.reach --asset AlexSEG
+
+# Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests
+# Tests (8: entity resolution + loader + cited reachability)
 python3 -m unittest discover -s tests -v
-
-# Validate the typed models against the AlexSEG gold labels
-PYTHONPATH=src python3 -c "import json; from nge.models import CapacityImpactFact; \
-d=json.load(open('data/fixtures/cgt_notice_26092015.expected_facts.json')); \
-print(len([CapacityImpactFact(**f) for f in d['capacity_impact_facts']]), 'facts validated')"
 ```
 
 ## Data boundary
@@ -52,7 +55,10 @@ acceptable because the data is public. Nomination volumes / positions / trade in
 
 ## Roadmap (high level)
 1. ✅ Phase 0 — architecture discovery + decision log.
-2. ▶ Phase 1 — canonical schema, entity-resolution proof, extraction schema, eval plan *(this commit)*.
-3. ⬜ Phase 2 — DuckDB load + ingest more counterparty point catalogs (shrink unresolved edges).
-4. ⬜ Phase 3 — LLM extraction step + provider-agnostic reasoning over the model.
+2. ✅ Phase 1 — canonical schema, entity-resolution proof, extraction schema, eval plan.
+3. ✅ Phase 2 — stack locked (Python+DuckDB), canonical store loads, **cited impact
+   analysis works end-to-end** (`nge.reach`), Egan/Bobcat onboarded to the model
+   (public-EBB fetch pending the network allowlist — see `docs/data-sources.md`).
+4. ⬜ Phase 3 — public-EBB fetch adapters (once network allowlisted) + LLM extraction
+   step + more counterparty point catalogs (shrink unresolved edges).
 5. ⬜ Later — minimal operational workspace UI.

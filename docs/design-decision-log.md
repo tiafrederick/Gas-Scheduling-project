@@ -14,13 +14,18 @@ Challenge any of these; that's the point.
 | DDL-007 | **Personal/local, public data only**; cloud LLM permitted; positions/nominations excluded | Accepted (user) | Index-of-Customers holdings are public FERC postings. |
 | DDL-008 | v1 = **cross-pipeline impact analysis** (AlexSEG → SESH deliveries) | Accepted (user) | Hardest, highest-value slice; proves the thesis. |
 | DDL-009 | **Portfolio commercial reachability** (CGT+SESH+Sabine + direct interconnects, direction flag, no hydraulics) | Accepted (user) | Enough for impact/alternate-path; avoids over-modeling. |
-| DDL-010 | **No graph database**; reachability via recursive SQL / in-memory `networkx` | Proposed | 3-pipe scale doesn't justify Neo4j ops burden. |
-| DDL-011 | Stack: **Python + DuckDB** canonical store + typed models (dataclass→Pydantic) + provider-agnostic LLM client | Proposed | Confirm at Phase 1 kickoff. Spike/tests kept stdlib-only. |
+| DDL-010 | **No graph database**; reachability via recursive SQL / in-memory `networkx` | Accepted | Proven: `nge/reach.py` answers the v1 impact question with a recursive CTE over `interconnect`. |
+| DDL-011 | Stack: **Python + DuckDB + Pydantic** (pdfplumber/networkx as optional extras) | Accepted | DuckDB = zero-ops single-file analytical SQL (recursive CTEs, native CSV/Parquet), portable to Postgres. Core resolution logic + tests stay stdlib-only. |
+| DDL-012 | **Acquisition v2**: automated fetch of **public** EBB pages, gated on the environment's network policy; one Enbridge InfoPost adapter serves **SESH + Egan + Bobcat**, one gasnom adapter serves Sabine. **Confidential shipper-login data (BP storage balances, scheduled quantities) stays manual-drop only; BP credentials never enter the container.** Low cadence (daily/per-cycle); fetched files land in the raw zone with the same provenance as manual drops. | Accepted (user) | Verified 2026-07-04: Egan (`EGHome.asp?Pipe=EG`) and Bobcat (`BGSHome.asp?Pipe=BGS`) post on Enbridge InfoPost — same platform as SESH. All egress from this environment is currently blocked at the proxy (even example.com), so fetching activates only after the user allowlists `infopost.enbridge.com` + `www.gasnom.com` in the environment's network settings. No MCP connector/skill needed (registry checked — nothing relevant exists); built-in fetch + preinstalled Playwright suffice. |
 
 ## Open items
-- Confirm Python + DuckDB stack (DDL-011) or alternative.
-- Storage (Egan/Bobcat/Sabine Hub) balance data — availability + shape.
-- First follow-on artifact: broaden ingestion (more pipe point catalogs) vs. build the
-  DuckDB load vs. wire the LLM extraction step vs. a written "portfolio map / scheduling-101"
-  learning doc.
+- **Egan/Bobcat FERC CIDs** — unverifiable this session (egress blocked); `pipeline` rows
+  carry loud `PENDING-EG` / `PENDING-BGS` placeholder keys that the first real EG/BGS data
+  drop must replace.
+- **Network allowlist** — user action: enable `infopost.enbridge.com` + `www.gasnom.com`
+  in the Claude Code environment network settings to activate public-EBB fetching.
+- Storage balance fact shape — design against the first real EG/BGS storage posting
+  (public "storage conditions") + manual-drop balance exports; do not assume format.
+- AlexSEG (and other CGT segments) → point mapping — needs CGT location data parse.
 - `operational_capacity_fact` columns — finalize against a real OAC/OA_MLC table.
+- LLM extraction step (Phase 3) — wire provider-agnostic client; eval against gold labels.
