@@ -19,13 +19,16 @@ Challenge any of these; that's the point.
 | DDL-012 | **Acquisition v2**: automated fetch of **public** EBB pages, gated on the environment's network policy; one Enbridge InfoPost adapter serves **SESH + Egan + Bobcat**, one gasnom adapter serves Sabine. **Confidential shipper-login data (BP storage balances, scheduled quantities) stays manual-drop only; BP credentials never enter the container.** Low cadence (daily/per-cycle); fetched files land in the raw zone with the same provenance as manual drops. | Accepted (user) | Verified 2026-07-04: Egan (`EGHome.asp?Pipe=EG`) and Bobcat (`BGSHome.asp?Pipe=BGS`) post on Enbridge InfoPost — same platform as SESH. All egress from this environment is currently blocked at the proxy (even example.com), so fetching activates only after the user allowlists `infopost.enbridge.com` + `www.gasnom.com` in the environment's network settings. No MCP connector/skill needed (registry checked — nothing relevant exists); built-in fetch + preinstalled Playwright suffice. |
 
 ## Open items
-- **Egan/Bobcat FERC CIDs** — unverifiable this session (egress blocked); `pipeline` rows
-  carry loud `PENDING-EG` / `PENDING-BGS` placeholder keys that the first real EG/BGS data
-  drop must replace.
-- **Network allowlist** — user action: enable `infopost.enbridge.com` + `www.gasnom.com`
-  in the Claude Code environment network settings to activate public-EBB fetching.
+- **Egan/Bobcat FERC CIDs** — `pipeline` rows carry loud `PENDING-EG` / `PENDING-BGS`
+  placeholder keys; backfill from the FERC CID listing or the portals' own postings in the
+  next (egress-enabled) session, per `docs/next-session.md` Step 2.
+- **Session restart for egress** — user set the domain allowlist to "All domains"
+  (2026-07-04), but egress policy binds at container start; the live-fetch work executes
+  in a **fresh session**. Handoff: `docs/next-session.md`.
 - Storage balance fact shape — design against the first real EG/BGS storage posting
   (public "storage conditions") + manual-drop balance exports; do not assume format.
 - AlexSEG (and other CGT segments) → point mapping — needs CGT location data parse.
 - `operational_capacity_fact` columns — finalize against a real OAC/OA_MLC table.
-- LLM extraction step (Phase 3) — wire provider-agnostic client; eval against gold labels.
+- LLM extraction step — the eval harness + regex baseline now exist
+  (`src/nge/extract/`); the LLM extractor implements the same interface and must beat the
+  baseline on the growing gold set. Needs `ANTHROPIC_API_KEY` in the environment.

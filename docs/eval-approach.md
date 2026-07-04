@@ -11,14 +11,23 @@ vibes.
 - **Metric to track as we ingest more pipes:** resolution-tier distribution. Success =
   shrinking `declared_external` / `resolved_cid_only` as counterparty catalogs land.
 
-## 2. Notice extraction (labeled, not yet automated)
+## 2. Notice extraction (harness BUILT — `src/nge/extract/`)
+- **Harness**: `src/nge/extract/eval.py` grades any extractor implementing
+  `extract(notice) -> list[CapacityImpactFact]` against every gold fixture.
+  CLI: `PYTHONPATH=src python3 -m nge.extract.eval [--extractor baseline]`.
+- **Baseline floor**: `src/nge/extract/baseline.py` (regex, tuned to observed CGT
+  phrasing) scores P/R/F1 = 1.0/1.0/1.0 on the AlexSEG gold. The LLM extractor must
+  beat it on the growing gold set or it doesn't ship.
 - **Gold set**: hand-labeled facts per notice (first one:
   `data/fixtures/cgt_notice_26092015.expected_facts.json`). Grow to ~20 notices spanning
   Maintenance / Capacity Constraint / Force Majeure / revisions.
-- **Metrics**: precision & recall on tuples (asset, metric, value_low, value_high,
-  direction, cycle); plus a hard **span-fidelity** check (every predicted `source_span`
-  must be a verbatim substring). Any hallucinated span = automatic fail for that fact.
-- **Confidence calibration**: bucket by predicted confidence; measure actual accuracy per bucket.
+- **Metrics**: precision & recall on (asset, metric) pairs with tuple-correctness over
+  (value_low, value_high, uom, direction, cycle, gas-day window); plus the hard
+  **span gate** (every predicted `source_span` must be a verbatim substring of the body —
+  a fabricated span zeroes the fact even when its values are right; enforced + tested in
+  `tests/test_extraction_eval.py`).
+- **Confidence calibration**: bucket by predicted confidence; measure actual accuracy per
+  bucket (starts once the LLM extractor exists — regex confidence is flat).
 
 ## 3. Bitemporal correctness
 - **Scenario test**: assert "AlexSEG estimated setting *as-of gas day 2026-07-08*
