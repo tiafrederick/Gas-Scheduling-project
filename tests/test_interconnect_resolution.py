@@ -15,15 +15,41 @@ class TestInterconnectResolution(unittest.TestCase):
         self.catalog, self.points = resolve.load_points()
         self.edges = {e.a_uid: e for e in resolve.resolve(self.points, self.catalog)}
 
-    def test_known_interconnect_round_trips(self):
-        """SESH 'COLUMBIA GULF - DELHI' must resolve to CGT 4208, both ways."""
+    def test_sesh_cgt_interconnect_reflects_real_posting_asymmetry(self):
+        """SESH 'COLUMBIA GULF - DELHI' (83004) declares CGT loc 4208 — CGT's own
+        undifferentiated point, since retired (loc_stat_ind='I') in favor of the
+        split delivery/receipt pair 4208D/4208R. SESH's posting hasn't been updated
+        to reference the split codes, so this is a genuine cross-EBB staleness the
+        system must surface, not paper over with a false 1.0 round-trip."""
         fwd = self.edges["C001203:83004"]
         self.assertEqual(fwd.b_uid, "C000307:4208")
+        self.assertEqual(fwd.status, "resolved_cid_loc")
+        self.assertLess(fwd.confidence, 1.0)
+
+        rev = self.edges["C000307:4208D"]
+        self.assertEqual(rev.b_uid, "C001203:83004")
+        self.assertEqual(rev.status, "resolved_cid_loc")
+
+    def test_cgt_egan_interconnect_round_trips(self):
+        """CGT 'EGAN STOR-ACADIA-REC' (4123) <-> Egan 'COLUMBIA - STORAGE' (45103)."""
+        fwd = self.edges["C000307:4123"]
+        self.assertEqual(fwd.b_uid, "C000086:45103")
         self.assertEqual(fwd.status, "resolved_roundtrip")
         self.assertEqual(fwd.confidence, 1.0)
 
-        rev = self.edges["C000307:4208"]
-        self.assertEqual(rev.b_uid, "C001203:83004")
+        rev = self.edges["C000086:45103"]
+        self.assertEqual(rev.b_uid, "C000307:4123")
+        self.assertEqual(rev.status, "resolved_roundtrip")
+
+    def test_cgt_sabine_henry_hub_round_trips(self):
+        """CGT 'SABINE - HENRY HUB' (519) <-> Sabine 'Columbia Gulf - HH' (11202)."""
+        fwd = self.edges["C000307:519"]
+        self.assertEqual(fwd.b_uid, "C000830:11202")
+        self.assertEqual(fwd.status, "resolved_roundtrip")
+        self.assertEqual(fwd.confidence, 1.0)
+
+        rev = self.edges["C000830:11202"]
+        self.assertEqual(rev.b_uid, "C000307:519")
         self.assertEqual(rev.status, "resolved_roundtrip")
 
     def test_na_counterparty_is_not_a_false_positive(self):

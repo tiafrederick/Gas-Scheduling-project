@@ -24,12 +24,13 @@ downstream effects. This engine builds the model *once*, keeps it correct over t
 | [`docs/canonical-model.md`](docs/canonical-model.md) | Entities, bitemporal convention, interconnect resolution tiers |
 | [`docs/extraction-schema.md`](docs/extraction-schema.md) | Notice→typed-facts schema, worked on the AlexSEG notice |
 | [`docs/eval-approach.md`](docs/eval-approach.md) | How each layer is measured for correctness |
-| [`docs/design-decision-log.md`](docs/design-decision-log.md) | Living decision log (DDL-001…011) |
+| [`docs/design-decision-log.md`](docs/design-decision-log.md) | Living decision log (DDL-001…013) |
 | [`schema/canonical.sql`](schema/canonical.sql) | Bitemporal DDL (DuckDB dialect) |
 | [`src/nge/models/facts.py`](src/nge/models/facts.py) | Typed fact models (`Notice`, `CapacityImpactFact`) |
-| [`spikes/interconnect_resolution/`](spikes/interconnect_resolution/) | Runnable proof: SESH↔CGT interconnect resolution |
-| [`data/samples/`](data/samples/) · [`data/fixtures/`](data/fixtures/) | Real public CSV exports + AlexSEG notice + gold labels |
-| [`tests/`](tests/) | Round-trip resolution test |
+| [`src/nge/tools/parse_cgt_locations.py`](src/nge/tools/parse_cgt_locations.py) | CGT's TC eConnects location PDF → point catalog CSV |
+| [`spikes/interconnect_resolution/`](spikes/interconnect_resolution/) | Runnable proof: cross-pipeline interconnect resolution |
+| [`data/samples/`](data/samples/) · [`data/fixtures/`](data/fixtures/) | Real public CSV exports (all 5 portfolio pipes) + AlexSEG notice + gold labels |
+| [`tests/`](tests/) | Round-trip resolution, loader, and cited-reachability tests |
 
 ## Run it
 ```bash
@@ -44,7 +45,7 @@ PYTHONPATH=src python3 -m nge.reach --asset AlexSEG
 # Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests (8: entity resolution + loader + cited reachability)
+# Tests (17: entity resolution + extraction eval + loader + cited reachability)
 python3 -m unittest discover -s tests -v
 ```
 
@@ -58,13 +59,18 @@ acceptable because the data is public. Nomination volumes / positions / trade in
 2. ✅ Phase 1 — canonical schema, entity-resolution proof, extraction schema, eval plan.
 3. ✅ Phase 2 — stack locked (Python+DuckDB), canonical store loads, **cited impact
    analysis works end-to-end** (`nge.reach`).
-4. ✅ Phase 3 (partial) — extraction eval harness + regex baseline
-   (`nge.extract`); **live public-EBB data landed via Firecrawl**: Egan Hub Storage
-   (FERC CID `C000086`) and Bobcat Gas Storage (`C001706`) point catalogs, both real,
-   both with provenance in `data/raw/`. New portfolio interconnect discovered:
-   Egan ↔ CGT. Open gaps: CGT's own point catalog (still a 1-row fixture), Sabine Hub
-   Services (distinct entity from Sabine Pipe Line, EBB location unconfirmed) — see
+4. ✅ Phase 3 — extraction eval harness + regex baseline (`nge.extract`); **all 5
+   portfolio pipes' point catalogs landed and real** (SESH, Sabine, Egan, Bobcat via
+   Firecrawl; CGT parsed from its TC eConnects PDF). Two new confidence-1.0
+   cross-pipeline round-trips: CGT↔Egan, CGT↔Sabine. Segment→asset mapping
+   (`segment_asset_map`, DDL-013) lets `nge.reach` cite CGT's *specific points*
+   (e.g. `4208D`/`4208R`) for an asset like AlexSEG, not just "the whole pipeline."
+   Along the way, found a genuine cross-EBB data-staleness case (SESH references
+   CGT's retired point `4208` instead of the split `4208D`/`4208R`) and surfaced it
+   rather than hiding it. Open gaps: Sabine Hub Services (distinct entity from Sabine
+   Pipe Line, EBB location unconfirmed), storage-balance fact schema — see
    `docs/design-decision-log.md` open items.
-5. ⬜ Phase 3 (remaining) — LLM extraction step; CGT (TC eConnects) point catalog;
-   resolve Sabine Hub Services; storage-balance fact schema.
+5. ⬜ Phase 4 (remaining) — LLM extraction step vs. the regex baseline on a growing
+   gold set; resolve Sabine Hub Services; storage-balance fact schema; broaden
+   ingestion to more counterparty point catalogs named by `resolved_cid_only` edges.
 6. ⬜ Later — minimal operational workspace UI.

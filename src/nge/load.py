@@ -42,6 +42,35 @@ PIPELINES = [
 IOC_CSV = os.path.join(REPO, "data", "samples", "sesh_index_of_customers.csv")
 GOLD_JSON = os.path.join(REPO, "data", "fixtures", "cgt_notice_26092015.expected_facts.json")
 
+# Segment -> notice-asset mapping (DDL-013). INFERRED, not sourced from any single
+# file: confirmed by cross-referencing CGT's own critical-notice text (which names
+# assets like "AlexSEG"/"BannSEG"/"StanSEG") against the segment code's geographic
+# footprint in the point catalog (county/town-name correspondence). Every row is
+# confidence-tagged; segments with no notice evidence are left unmapped rather than
+# guessed.
+SEGMENT_ASSET_MAP = [
+    # (tsp_ferc_cid, seg_cd, asset_name, confidence, note)
+    ("C000307", "ALEXDRIA", "AlexSEG", 0.9,
+     "Notice 26092015 names 'Alexandria Compressor Station'/AlexSEG; segment's points "
+     "(4203, 4204/D/R, 4208/D/R SESH interconnect, 4227, 4232, 4235, 4252, 5112) cluster "
+     "in Richland/Franklin Parish, LA — the Alexandria, LA area."),
+    ("C000307", "BANNER", "BannSEG", 0.9,
+     "Notices name 'Banner Compressor Station'/BannSEG and 'New Albany Compressor "
+     "Station Maintenance (BannSEG)'; segment's points (4023, 4134, 4219) are in "
+     "Alcorn/Pontotoc/Union counties, MS — matches the Banner/New Albany, MS area."),
+    ("C000307", "STANTON", "StanSEG", 0.9,
+     "Notices name 'Grayson Compressor Station (StanSEG)' and 'Mainline-200 Pigging "
+     "(StanSEG)'; segment's points (801 Gulf-Leach, 4256 Big Run) are in Menifee/Boyd "
+     "counties, KY — matches Stanton, KY on CGT's Kentucky mainline."),
+    ("C000307", "HouLn100", "HoumaSEG", 0.7,
+     "Notice names 'Paradis Lateral Pipeline Maintenance (HoumaSEG)'; segment's points "
+     "(401, 4098, 4151, 4171, 4212, 4223, 448, 491, 533) cluster in Terrebonne/"
+     "Lafourche Parish, LA — Terrebonne's parish seat is Houma, LA. Geographic match is "
+     "strong but the segment<->asset correspondence is not yet notice-confirmed the way "
+     "AlexSEG/BannSEG/StanSEG are (their exact compressor-station points aren't named in "
+     "any notice read so far) — verify at the desk before treating as certain."),
+]
+
 
 def _uid(*parts: str) -> str:
     return hashlib.sha1("|".join(p or "" for p in parts).encode()).hexdigest()[:16]
@@ -77,10 +106,11 @@ def load_points_and_interconnects(con) -> None:
     for p in points:
         con.execute(
             "INSERT INTO point (point_uid, tsp_ferc_cid, loc, loc_name, loc_st_abbrev,"
-            " loc_cnty, loc_zone, loc_type_ind, dir_flo, loc_stat_ind, source_file)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            " loc_cnty, loc_zone, loc_type_ind, dir_flo, loc_stat_ind, pipeline_seg_cd,"
+            " source_file) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             [p.uid, p.tsp_ferc_cid, p.loc, p.loc_name, p.loc_st, p.loc_cnty,
-             p.loc_zone, p.loc_type_ind, p.dir_flo, p.loc_stat_ind, p.source_file])
+             p.loc_zone, p.loc_type_ind, p.dir_flo, p.loc_stat_ind, p.pipeline_seg_cd,
+             p.source_file])
     for e in R.resolve(points, catalog):
         con.execute(
             "INSERT INTO interconnect (interconnect_uid, a_point_uid, a_tsp_ferc_cid,"
@@ -90,6 +120,14 @@ def load_points_and_interconnects(con) -> None:
             [_uid(e.a_uid, e.b_cid or "", e.b_loc or ""), e.a_uid, e.a_cid, e.a_loc,
              e.b_uid, e.b_cid, e.b_loc, e.b_name, e.dir_flo,
              e.status, e.confidence, e.source_file])
+
+
+def load_segment_asset_map(con) -> None:
+    for cid, seg, asset, conf, note in SEGMENT_ASSET_MAP:
+        con.execute(
+            "INSERT INTO segment_asset_map (tsp_ferc_cid, seg_cd, asset_name,"
+            " confidence, note) VALUES (?,?,?,?,?)",
+            [cid, seg, asset, conf, note])
 
 
 def load_index_of_customers(con) -> None:
@@ -169,6 +207,7 @@ def load_all(db_path: str = DEFAULT_DB):
     con = create_db(db_path, fresh=True)
     load_pipelines(con)
     load_points_and_interconnects(con)
+    load_segment_asset_map(con)
     load_index_of_customers(con)
     load_notice_and_facts(con)
     return con

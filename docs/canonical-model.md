@@ -21,12 +21,19 @@ in scheduling (a notice gets revised; a rate's effective date differs from when 
 | `pipeline` | one TSP | `ferc_cid` |
 | `point` | one location on one pipe | `point_uid = tsp_ferc_cid || ':' || loc` |
 | `interconnect` | one declared counterparty edge | hash of a-point + b keys |
+| `segment_asset_map` | one segment→notice-asset mapping (DDL-013) | `(tsp_ferc_cid, seg_cd, asset_name)` |
 | `contract_holding` | one contract (K number) | `holding_uid`; valid time = term |
 | `contract_point` | point on a holding | (holding, point) |
 | `notice` | one EBB notice (immutable) | `tsp_ferc_cid || ':' || notice_id` |
 | `capacity_impact_fact` | one extracted number | `fact_uid`; valid time = gas-day window |
 | `rate_fact` | one rate component | `rate_uid`; valid time = effective window |
 | `operational_capacity_fact` | point × gas_day × cycle | `cap_uid` (shape stubbed) |
+
+`point.pipeline_seg_cd` carries the TC eConnects segment code (e.g. `ALEXDRIA`) for CGT
+points — the only portfolio-pipe export that has one. `segment_asset_map` joins that code
+to the asset name schedulers see in notices (e.g. `AlexSEG`), confidence-tagged and
+never silently assumed; `nge.reach` uses it to walk asset → segment → its specific
+points → interconnects instead of falling back to whole-pipeline reachability.
 
 ## Interconnect resolution tiers
 The `interconnect.resolution_status` / `resolution_confidence` values, proven in the spike:
@@ -53,4 +60,3 @@ spot in impact analysis (risk #1).
 - Storage (Egan / Bobcat / Sabine Hub) balance facts — no data yet; likely a distinct
   `storage_balance_fact` grain (inventory, injection/withdrawal, ratchets vs. contract).
 - Capacity-screen (`operational_capacity_fact`) columns — finalize when we parse a real OAC/OA_MLC table.
-- Compressor-segment ↔ point mapping (AlexSEG → which CGT points?) — needs CGT location data.

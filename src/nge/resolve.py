@@ -38,11 +38,24 @@ SABINE_LAYOUT = {
     "loc_st": "LOC ST ABBREV", "loc_cnty": "LOC CNTY", "loc_zone": "LOC ZONE",
     "loc_type_ind": "LOC TYPE IND", "loc_stat_ind": "LOC STAT IND",
 }
+# TC eConnects (Columbia Gulf) — same field names as SESH_LAYOUT plus the one
+# column no other portfolio pipe's export carries: Pipeline Seg Cd, the key that
+# makes segment->asset mapping possible (DDL-013).
+CGT_LAYOUT = {
+    "tsp_ferc_cid": "TSP FERC CID", "loc": "Loc", "loc_name": "Loc Name",
+    "dir_flo": "Dir Flo", "updn_ind": "Up/Dn Ind",
+    "updn_ferc_cid": "Up/Dn FERC CID", "updn_loc": "Up/Dn Loc",
+    "updn_name": "Up/Dn Loc Name",
+    "loc_st": "Loc St Abbrev", "loc_cnty": "Loc Cnty", "loc_zone": "Loc Zone",
+    "loc_type_ind": "Loc Type Ind", "loc_stat_ind": "Loc Stat Ind",
+    "pipeline_seg_cd": "Pipeline Seg Cd",
+}
 
 # (relative path, layout, provenance label)
 SOURCES = [
     ("data/samples/sesh_all_points.csv", SESH_LAYOUT, "SESH InfoPost (real)"),
-    ("data/fixtures/cgt_points_sample.csv", SESH_LAYOUT, "CGT fixture (reciprocal of 83004)"),
+    ("data/samples/cgt_all_points.csv", CGT_LAYOUT,
+     "CGT TC eConnects (real, PDF-parsed 2026-07-04; see src/nge/tools/parse_cgt_locations.py)"),
     ("data/samples/sabine_locations.csv", SABINE_LAYOUT, "Sabine gasnom (real)"),
     ("data/samples/egan_all_points.csv", SESH_LAYOUT,
      "Egan Hub Storage InfoPost (real, via Firecrawl 2026-07-04)"),
@@ -107,6 +120,7 @@ class Point:
     loc_zone: Optional[str] = None
     loc_type_ind: Optional[str] = None
     loc_stat_ind: Optional[str] = None
+    pipeline_seg_cd: Optional[str] = None
 
     @property
     def uid(self) -> str:
@@ -158,6 +172,7 @@ def load_points(repo: str = REPO) -> tuple[dict[str, Point], list[Point]]:
                     loc_zone=clean(row.get(layout.get("loc_zone", ""))),
                     loc_type_ind=clean(row.get(layout.get("loc_type_ind", ""))),
                     loc_stat_ind=clean(row.get(layout.get("loc_stat_ind", ""))),
+                    pipeline_seg_cd=clean(row.get(layout.get("pipeline_seg_cd", ""))),
                 )
                 catalog[p.uid] = p
                 ordered.append(p)

@@ -49,10 +49,30 @@ CREATE TABLE IF NOT EXISTS point (
     loc_stat_ind    VARCHAR,                 -- A active
     eff_date        DATE,
     inact_date      DATE,
+    pipeline_seg_cd VARCHAR,                 -- TC eConnects segment code (e.g. 'ALEXDRIA');
+                                              -- NULL for pipelines whose export doesn't carry
+                                              -- one. Joins to segment_asset_map (DDL-013).
     source_file     VARCHAR,                 -- provenance
     system_from     TIMESTAMP DEFAULT now(),
     system_to       TIMESTAMP,
     UNIQUE (tsp_ferc_cid, loc, system_from)
+);
+
+-- ---------------------------------------------------------------------------
+-- DIM: segment_asset_map (DDL-013) — maps a pipeline's internal segment code
+-- to the named compressor/pipeline asset schedulers see in EBB notices (e.g.
+-- CGT segment 'ALEXDRIA' -> notice asset 'AlexSEG'). This mapping is INFERRED
+-- from co-occurring evidence (segment naming pattern + notice text), not
+-- authoritative from any single source file, so every row is confidence-
+-- tagged and human-verifiable rather than silently assumed.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS segment_asset_map (
+    tsp_ferc_cid    VARCHAR NOT NULL REFERENCES pipeline(ferc_cid),
+    seg_cd          VARCHAR NOT NULL,
+    asset_name      VARCHAR NOT NULL,        -- e.g. 'AlexSEG'
+    confidence      DOUBLE NOT NULL,
+    note            VARCHAR,                 -- evidence / rationale
+    PRIMARY KEY (tsp_ferc_cid, seg_cd, asset_name)
 );
 
 -- ---------------------------------------------------------------------------

@@ -57,19 +57,54 @@ def impact_report(con: duckdb.DuckDBPyConnection, asset: str) -> str:
         w(f"  • {metric}: {rng} {uom} [{direction or 'n/a'}]{win}{cyc}"
           f"  (fact {fact_uid}, conf {conf}, {ver})")
     w("")
-    w("NOTE: asset→point mapping for CGT segments is pending CGT location data;")
-    w("impact below is shown at pipeline-interconnect granularity (known gap).")
-    w("")
 
-    # 2) Recursive reachability from the constrained pipeline over resolved edges.
-    reach = con.execute("""
+    # 2) asset -> segment(s) -> points (DDL-013). Every mapping row is confidence-
+    # tagged and cited; assets with no mapping fall back to pipeline-level reach.
+    seg_rows = con.execute("""
+        SELECT seg_cd, confidence, note FROM segment_asset_map
+        WHERE tsp_ferc_cid = ? AND lower(asset_name) = lower(?)
+    """, [pipe_cid, asset]).fetchall()
+
+    start_points: list[tuple[str, str]] = []  # (point_uid, seg_cd)
+    if seg_rows:
+        w(f"Asset -> segment mapping (segment_asset_map, DDL-013):")
+        for seg_cd, mconf, note in seg_rows:
+            w(f"  • {asset} -> segment '{seg_cd}'  (confidence {mconf})")
+            w(f"      {note}")
+        w("")
+        placeholders = ",".join("?" * len(seg_rows))
+        pts = con.execute(f"""
+            SELECT point_uid, pipeline_seg_cd FROM point
+            WHERE tsp_ferc_cid = ? AND pipeline_seg_cd IN ({placeholders})
+        """, [pipe_cid, *[s[0] for s in seg_rows]]).fetchall()
+        start_points = pts
+        w(f"Points on the mapped segment(s): {len(start_points)}"
+          f" ({', '.join(p for p, _ in start_points)})")
+        w("")
+    else:
+        w(f"NOTE: no segment_asset_map entry for asset '{asset}' — falling back to"
+          f" pipeline-level reachability (coarser, but nothing is hidden).")
+        w("")
+
+    # 3) Recursive reachability, starting from the asset's own points when known,
+    # else from the whole constrained pipeline (graceful degradation).
+    if start_points:
+        seed_uids = [p for p, _ in start_points]
+        seed_placeholders = ",".join("?" * len(seed_uids))
+        base_where = f"i.a_point_uid IN ({seed_placeholders})"
+        base_params = list(seed_uids)
+    else:
+        base_where = "i.a_tsp_ferc_cid = ?"
+        base_params = [pipe_cid]
+
+    reach = con.execute(f"""
         WITH RECURSIVE hops AS (
             SELECT i.interconnect_uid, i.a_tsp_ferc_cid AS from_cid,
                    i.b_tsp_ferc_cid AS to_cid, i.a_point_uid, i.b_point_uid,
                    i.resolution_status, i.resolution_confidence, 1 AS depth,
                    i.a_point_uid || ' -> ' || coalesce(i.b_point_uid,'?') AS path
             FROM interconnect i
-            WHERE i.a_tsp_ferc_cid = ? AND i.b_tsp_ferc_cid IS NOT NULL
+            WHERE {base_where} AND i.b_tsp_ferc_cid IS NOT NULL
               AND i.resolution_confidence >= ?
             UNION ALL
             SELECT i.interconnect_uid, i.a_tsp_ferc_cid, i.b_tsp_ferc_cid,
@@ -88,7 +123,7 @@ def impact_report(con: duckdb.DuckDBPyConnection, asset: str) -> str:
                h.depth, h.path, p.name, p.is_portfolio
         FROM hops h JOIN pipeline p ON p.ferc_cid = h.to_cid
         ORDER BY h.depth, h.to_cid
-    """, [pipe_cid, MIN_EDGE_CONFIDENCE, MIN_EDGE_CONFIDENCE]).fetchall()
+    """, [*base_params, MIN_EDGE_CONFIDENCE, MIN_EDGE_CONFIDENCE]).fetchall()
 
     w(f"Downstream/upstream pipelines reachable from {pipe_code} over edges with"
       f" confidence >= {MIN_EDGE_CONFIDENCE}:")

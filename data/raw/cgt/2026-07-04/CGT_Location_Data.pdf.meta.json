@@ -1,0 +1,10 @@
+{
+  "source": "manual-upload",
+  "note": "TC eConnects Location Data Download for Columbia Gulf Transmission, LLC (TSP 007854581, FERC CID C000307). Provided by the user in the original Gas_Scheduling_resources.zip upload; not fetched live (Firecrawl was disconnected this session; TC eConnects is a different platform than Enbridge InfoPost so the Egan/Bobcat fetch pattern didn't apply).",
+  "retrieved_at": "2026-07-04",
+  "sha256": "b77ecc6d9c09db7368cb0001f627cda3e8c316e4691284aa4aff5bf283da06b6",
+  "pages": 48,
+  "extraction_method": "programmatic: PyMuPDF (fitz) raw text extraction + anchored token-stream parser (src/nge/tools/parse_cgt_locations.py), validated against 11 manually-verified rows spanning all structural edge cases (inactive points, suffix-coded points 4204D/4204R/4208D/4208R, offshore/OSYS zone, storage/interconnect/LDC types, multi-line wrapped Up/Dn Loc Name)",
+  "extracted_row_count": 153,
+  "excluded": "marketer/shipper pooling points (Loc prefixed P2/P3/P4, Loc Type Ind=PPT) — these are TC eConnects internal pool-accounting constructs at the RAYNE/W-E-LINE market pools, not physical pipeline interconnects; excluding them keeps the graph to real physical points while the exclusion itself is logged here for auditability"
+}

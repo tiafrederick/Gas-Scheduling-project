@@ -17,12 +17,22 @@ Challenge any of these; that's the point.
 | DDL-010 | **No graph database**; reachability via recursive SQL / in-memory `networkx` | Accepted | Proven: `nge/reach.py` answers the v1 impact question with a recursive CTE over `interconnect`. |
 | DDL-011 | Stack: **Python + DuckDB + Pydantic** (pdfplumber/networkx as optional extras) | Accepted | DuckDB = zero-ops single-file analytical SQL (recursive CTEs, native CSV/Parquet), portable to Postgres. Core resolution logic + tests stay stdlib-only. |
 | DDL-012 | **Acquisition v2**: fetch **public** EBB pages via the Firecrawl MCP connector (a hosted scraper, not subject to this container's egress proxy) — no session restart required. One logical Enbridge InfoPost adapter serves **SESH + Egan + Bobcat**, one gasnom adapter serves Sabine. **Confidential shipper-login data (BP storage balances, scheduled quantities) stays manual-drop only; BP credentials never enter the container.** Fetched files land in `data/raw/<portal>/<date>/` with a `.meta.json` provenance sidecar (source, url, retrieved_at, sha256, content_type, bytes) — same discipline as manual drops. | Accepted (user) | **Superseded original finding**: direct curl/WebFetch egress from this container was blocked even after the user set the domain allowlist to "All domains" (policy binds at container boot). But the **Firecrawl MCP tool reaches these hosts today**, since it fetches from Firecrawl's own infrastructure. Landed 2026-07-04: Egan (`EgAllPoints.csv`, FERC CID **C000086**) and Bobcat (`BGSAllPoints.csv`, FERC CID **C001706**) point catalogs, both real, both on Enbridge InfoPost. `docs/next-session.md` (direct-fetch-in-a-fresh-session) is kept as a **fallback path** for a Firecrawl-free / no-credit-cost future run — not deleted. |
+| DDL-013 | **Segment→asset mapping** (`segment_asset_map` table): CGT's TC eConnects export carries a `Pipeline Seg Cd` per point (e.g. `ALEXDRIA`) that notices don't use directly (they say `AlexSEG`). The mapping is **inferred, not sourced** — confirmed by cross-referencing notice text ("Alexandria Compressor Station"/AlexSEG, "Banner Compressor Station"/BannSEG, "Grayson Compressor Station (StanSEG)") against each segment's point-catalog geographic footprint (county/town-name correspondence). Every row is confidence-tagged (0.7–0.9) with its evidence in `note`; segments with no notice evidence are left **unmapped**, not guessed. `nge.reach` uses this to walk asset → segment → its specific points → interconnects, so the AlexSEG report now cites `4208D`/`4208R` directly instead of "CGT the whole pipeline." | Accepted | CGT's location PDF has no `pdfplumber`/`pypdf`-readable path in this sandbox (`cryptography` binding is broken); parsed instead with PyMuPDF (`fitz`, no crypto dependency) + a custom anchored-vocabulary token parser (`src/nge/tools/parse_cgt_locations.py`) validated against 11 manually-verified rows spanning every structural edge case in the source. |
+
+## CGT point catalog — landed (resolves prior open item)
+153 physical points parsed from `CGT Location Data.pdf` into `data/samples/cgt_all_points.csv`
+(marketer/shipper pooling points — `Loc` prefixed `P2/P3/P4`, `Loc Type Ind=PPT` — deliberately
+excluded as TC eConnects accounting constructs, not physical interconnects; logged in the
+raw-landing `.meta.json` sidecar for auditability). This **closed two new confidence-1.0
+round-trips**: CGT `4123` ↔ Egan `45103`, and CGT `519` ↔ Sabine `11202`.
+
+**Real-data finding, not a bug**: SESH `83004` (COLUMBIA GULF - DELHI) declares CGT loc `4208`
+— CGT's own *undifferentiated* point, `loc_stat_ind='I'` (inactive) since 2022-08, superseded by
+the split delivery/receipt pair `4208D`/`4208R`. SESH's posting hasn't been updated to reference
+the split codes. The resolver correctly reports this as `resolved_cid_loc` (0.9), not a false
+`resolved_roundtrip` (1.0) — a genuine cross-EBB staleness the system surfaces rather than hides.
 
 ## Open items
-- **CGT (TC eConnects) point catalog** — still only a 1-row fixture (SESH-83004
-  reciprocal). Every Egan/Bobcat/Sabine↔CGT edge resolves at best to
-  `resolved_cid_only` until CGT's real location data is landed. TC eConnects is an
-  untested target for Firecrawl (different platform than InfoPost/gasnom) — try next.
 - **Sabine Hub Services, L.L.C.** — confirmed via web search to be a *distinct* ONEOK
   legal entity from Sabine Pipe Line LLC (it administers Henry Hub volume tracking;
   Sabine Pipe Line provides the physical wheeling). gasnom's Sabine Pipe Line portal nav
@@ -35,10 +45,17 @@ Challenge any of these; that's the point.
   Index-of-Customers/Locations exist for Egan+Bobcat, but no storage-inventory-balance
   page was found in the public nav (consistent with DDL-007: balances are likely behind
   the LINK shipper login).
-- AlexSEG (and other CGT segments) → point mapping — needs CGT location data parse.
+- `HouLn100`→HoumaSEG mapping (0.7 confidence) is geography-only (Terrebonne Parish =
+  Houma, LA); unlike AlexSEG/BannSEG/StanSEG, no notice has named the exact HoumaSEG
+  points yet — verify at the desk before treating as certain.
 - `operational_capacity_fact` columns — finalize against a real OAC/OA_MLC table
   (Egan/Bobcat capacity pages are on `rtba.enbridge.com`, a different subdomain/likely
   JS app — untested).
 - LLM extraction step — the eval harness + regex baseline now exist
   (`src/nge/extract/`); the LLM extractor implements the same interface and must beat the
   baseline on the growing gold set. Needs `ANTHROPIC_API_KEY` in the environment.
+- Minor pre-existing data-quality artifact (not introduced this session): one Sabine
+  points row (`loc=1604`, "Chemical Waste Management") has `Up/Dn Ind=N` but a literal
+  `"N"` in the FERC CID column position, which the resolver currently passes through as
+  if it were a real CID. Low-impact (1 row); worth a small `resolve.py` hardening pass
+  (validate CID shape, or gate on `updn_ind=='Y'`) whenever resolve.py is next touched.

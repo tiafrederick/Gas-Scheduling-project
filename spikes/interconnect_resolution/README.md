@@ -6,9 +6,14 @@ mapping — and know *how confident* each hop is?
 
 **Answer:** yes. Each pipeline's point posting already declares its counterparty's
 `FERC CID` + `Loc`. Keying points by the composite `(tsp_ferc_cid, loc)` and
-resolving those declarations yields the interconnect graph. The known
-**SESH `83004` (COLUMBIA GULF - DELHI) ↔ CGT `4208` (SESH)** pair resolves
-bidirectionally at confidence 1.0.
+resolving those declarations yields the interconnect graph — now proven on real
+data for all five portfolio pipes. Confirmed confidence-1.0 round-trips:
+**CGT `4123` ↔ Egan `45103`** and **CGT `519` ↔ Sabine `11202`**. The
+**SESH `83004` ↔ CGT `4208`** pair resolves at 0.9 (`resolved_cid_loc`), not 1.0 —
+a genuine finding, not a bug: SESH's posting still references CGT's retired,
+undifferentiated point `4208` rather than the split delivery/receipt pair
+`4208D`/`4208R` CGT uses today. The system surfaces that staleness instead of
+hiding it (see `docs/design-decision-log.md` DDL-013).
 
 ## Run
 ```bash
@@ -19,8 +24,11 @@ python3 -m unittest tests.test_interconnect_resolution -v
 ## Inputs
 - `data/samples/sesh_all_points.csv` — real SESH InfoPost point export (public).
 - `data/samples/sabine_locations.csv` — real Sabine/gasnom point export (public).
-- `data/fixtures/cgt_points_sample.csv` — **fixture**: one CGT point (`4208`), the
-  reciprocal of SESH `83004`, hand-built pending a parse of `CGT Location Data.pdf`.
+- `data/samples/cgt_all_points.csv` — real CGT (TC eConnects) point export, parsed
+  from the source PDF by `src/nge/tools/parse_cgt_locations.py` (see that module's
+  docstring for why a custom parser was needed and how it was validated).
+- `data/samples/egan_all_points.csv`, `data/samples/bobcat_all_points.csv` — real
+  Enbridge InfoPost exports (fetched via Firecrawl).
 
 ## Resolution tiers (confidence)
 | status | conf | meaning |

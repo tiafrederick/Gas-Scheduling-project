@@ -32,8 +32,21 @@ class TestLoadAndReach(unittest.TestCase):
         from nge.store import table_counts
         counts = table_counts(self.con)
         for table in ("pipeline", "point", "interconnect", "contract_holding",
-                      "contract_point", "notice", "capacity_impact_fact"):
+                      "contract_point", "notice", "capacity_impact_fact",
+                      "segment_asset_map"):
             self.assertGreater(counts[table], 0, f"{table} is empty")
+
+    def test_cgt_points_carry_segment_codes(self):
+        """CGT's TC eConnects export is the only source with Pipeline Seg Cd;
+        confirm it landed (DDL-013 depends on it)."""
+        n = self.con.execute(
+            "SELECT count(*) FROM point WHERE tsp_ferc_cid='C000307'"
+            " AND pipeline_seg_cd IS NOT NULL").fetchone()[0]
+        self.assertGreater(n, 100)
+        alexdria = self.con.execute(
+            "SELECT count(*) FROM point WHERE tsp_ferc_cid='C000307'"
+            " AND pipeline_seg_cd='ALEXDRIA'").fetchone()[0]
+        self.assertGreaterEqual(alexdria, 10)
 
     def test_portfolio_pipes_present(self):
         codes = {r[0] for r in self.con.execute(
@@ -50,15 +63,18 @@ class TestLoadAndReach(unittest.TestCase):
         self.assertEqual(str(row[2]), "2027-10-31")
 
     def test_impact_report_is_cited_end_to_end(self):
-        """The v1 slice: AlexSEG -> SESH via cited hops -> BP holdings."""
+        """The v1 slice: AlexSEG -> ALEXDRIA segment points -> SESH via cited
+        hops -> BP holdings."""
         from nge.reach import impact_report
         report = impact_report(self.con, "AlexSEG")
         # constraint fact with provenance
         self.assertIn("estimated_capacity_setting", report)
         self.assertIn("2,325,000", report)
-        # cited interconnect hop to SESH
-        self.assertIn("C000307:4208 -> C001203:83004", report)
-        self.assertIn("resolved_roundtrip", report)
+        # asset -> segment mapping cited (DDL-013)
+        self.assertIn("segment 'ALEXDRIA'", report)
+        self.assertIn("C000307:4208D", report)  # segment's own points, not just the asset name
+        # cited interconnect hop to SESH (point-level, not whole-pipeline)
+        self.assertIn("C000307:4208D -> C001203:83004", report)
         self.assertIn("PORTFOLIO PIPE", report)
         # BP exposure with contract + point citations
         self.assertIn("840245-R1", report)
