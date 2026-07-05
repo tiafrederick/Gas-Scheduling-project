@@ -1,0 +1,32 @@
+IMPACT ANALYSIS — asset 'AlexSEG' on Columbia Gulf Transmission, LLC [CGT]
+==========================================================================
+Notice: Alexandria and Chicot Compressor Station Maintenance (AlexSEG), July 8-10, 2026
+        [C000307:26092015] type=Maintenance critical=True
+
+Constraint facts (extracted, provenance-tracked):
+  • design_capacity: 2,683,256 Dth [backhaul]  (fact 64b2aa5163d77789, conf 0.99, UNVERIFIED)
+  • estimated_capacity_setting: 2,325,000–2,450,000 Dth [backhaul] gas days 2026-07-08→2026-07-10 eff TIMELY  (fact cd6e3f9e2e02c977, conf 0.97, UNVERIFIED)
+  • posted_percentage: 87–91 percent [backhaul]  (fact 9e4f80d0aa0e6d83, conf 0.99, UNVERIFIED)
+
+Asset -> segment mapping (segment_asset_map, DDL-013):
+  • AlexSEG -> segment 'ALEXDRIA'  (confidence 0.9)
+      Notice 26092015 names 'Alexandria Compressor Station'/AlexSEG; segment's points (4203, 4204/D/R, 4208/D/R SESH interconnect, 4227, 4232, 4235, 4252, 5112) cluster in Richland/Franklin Parish, LA — the Alexandria, LA area.
+
+Points on the mapped segment(s): 14 (C000307:4112, C000307:4196, C000307:4203, C000307:4204, C000307:4204D, C000307:4204R, C000307:4208, C000307:4208D, C000307:4208R, C000307:4227, C000307:4232, C000307:4235, C000307:4252, C000307:5112)
+
+Downstream/upstream pipelines reachable from CGT over edges with confidence >= 0.9:
+  hop 1: C000307:4208D -> C001203:83004
+         -> Southeast Supply Header, LLC [C001203] (PORTFOLIO PIPE)
+            via interconnect d9c0cc9e6c6abecb [resolved_cid_loc, conf 0.9]
+  hop 1: C000307:4208R -> C001203:83104
+         -> Southeast Supply Header, LLC [C001203] (PORTFOLIO PIPE)
+            via interconnect 930497881d75fbec [resolved_cid_loc, conf 0.9]
+
+BP ENERGY exposure on Southeast Supply Header, LLC [C001203]:
+  • Contract 840245-R1 (FTS) MDQ 27,000 Dth/d, term 2022-11-01→2027-10-31  (holding 86e0f187e7450e82)
+      - point 83101 TRANSCO - CODEN  [C001203:83101]
+      - point 83102 FGT STA 44 (FGT AIRPORT ROAD) CODEN  [C001203:83102]
+      - point 83110 FGT - LUCEDALE (REC - 83010)  [C001203:83110]
+      - point 83111 GULFSTREAM - CODEN (REC - 83011)  [C001203:83111]
+
+Every hop above cites a store row (fact/notice/interconnect/point/holding).

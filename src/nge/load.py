@@ -72,6 +72,37 @@ SEGMENT_ASSET_MAP = [
 ]
 
 
+# Market hubs + memberships (DDL-015). Curated the same way as SEGMENT_ASSET_MAP:
+# every membership row is a desk-verifiable claim with its evidence attached.
+MARKET_HUBS = [
+    # (hub_id, name, region, note)
+    ("HENRY", "Henry Hub", "Erath, Vermilion Parish, LA",
+     "The NYMEX natural gas delivery point, operated by Sabine Pipe Line at the "
+     "Erath/Henry complex."),
+    ("PERRYVILLE", "Perryville Hub", "Richland/Franklin Parish, LA",
+     "North Louisiana hub cluster around CGT's Perryville-area interconnects and "
+     "Perryville Gas Storage."),
+]
+HUB_MEMBERS = [
+    # (hub_id, point_uid, confidence, note)
+    ("HENRY", "C000830:11202", 0.95,
+     "Sabine's own point 'Columbia Gulf - HH' — Sabine operates Henry Hub; "
+     "confidence-1.0 roundtrip with CGT 519."),
+    ("HENRY", "C000307:519", 0.95,
+     "CGT's point is NAMED 'SABINE - HENRY HUB' in CGT's own catalog; "
+     "roundtrip-confirmed against Sabine 11202."),
+    ("PERRYVILLE", "C000307:4235", 0.9,
+     "CGT point 'Perryville Storage' -> Perryville Gas Storage LLC (C003409); "
+     "the storage facility that anchors the hub."),
+    ("PERRYVILLE", "C000307:5112", 0.85,
+     "CGT point 'NORAM - Perryville - Delivery' -> Enable Gas Transmission "
+     "(C000544) 'CGT PV CORE REC' — Perryville named on both sides."),
+    ("PERRYVILLE", "C000307:4209", 0.7,
+     "CGT point 'MidContinent Express' -> MEP 'COL GULF/MEP PERRYVILLE MADISON' — "
+     "Perryville named only on the counterparty side; verify at the desk."),
+]
+
+
 def _uid(*parts: str) -> str:
     return hashlib.sha1("|".join(p or "" for p in parts).encode()).hexdigest()[:16]
 
@@ -128,6 +159,19 @@ def load_segment_asset_map(con) -> None:
             "INSERT INTO segment_asset_map (tsp_ferc_cid, seg_cd, asset_name,"
             " confidence, note) VALUES (?,?,?,?,?)",
             [cid, seg, asset, conf, note])
+
+
+def load_market_hubs(con) -> None:
+    for hub_id, name, region, note in MARKET_HUBS:
+        con.execute(
+            "INSERT INTO market_hub (hub_id, name, region, note) VALUES (?,?,?,?)",
+            [hub_id, name, region, note])
+    for hub_id, point_uid, conf, note in HUB_MEMBERS:
+        # FK to point(point_uid) makes a typo'd membership fail LOUDLY at load.
+        con.execute(
+            "INSERT INTO hub_member (hub_id, point_uid, confidence, note)"
+            " VALUES (?,?,?,?)",
+            [hub_id, point_uid, conf, note])
 
 
 def load_index_of_customers(con) -> None:
@@ -208,6 +252,7 @@ def load_all(db_path: str = DEFAULT_DB):
     load_pipelines(con)
     load_points_and_interconnects(con)
     load_segment_asset_map(con)
+    load_market_hubs(con)
     load_index_of_customers(con)
     load_notice_and_facts(con)
     return con

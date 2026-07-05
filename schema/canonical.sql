@@ -218,3 +218,23 @@ CREATE TABLE IF NOT EXISTS operational_capacity_fact (
     source_file         VARCHAR,
     system_recorded_at  TIMESTAMP DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- DIM: market hubs (curated seeds, DDL-015). A hub is a *commercial* cluster of
+-- physical points (Henry Hub is where more than a dozen pipes meet at Sabine's
+-- Erath complex). Membership is a desk-verifiable claim, governed like
+-- segment_asset_map (DDL-013): confidence + evidence note per row, never guessed.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS market_hub (
+    hub_id      VARCHAR PRIMARY KEY,             -- 'HENRY', 'PERRYVILLE'
+    name        VARCHAR NOT NULL,
+    region      VARCHAR,
+    note        VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS hub_member (
+    hub_id      VARCHAR NOT NULL REFERENCES market_hub(hub_id),
+    point_uid   VARCHAR NOT NULL REFERENCES point(point_uid),
+    confidence  DOUBLE NOT NULL,                 -- curation confidence, 0..1
+    note        VARCHAR NOT NULL                 -- the evidence for membership
+);

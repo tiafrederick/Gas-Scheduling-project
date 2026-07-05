@@ -5,8 +5,10 @@ Answers the Phase-2 vertical-slice question (DDL-008):
 
 Every hop in the answer cites the store row it came from (fact_uid, notice_uid,
 interconnect_uid, point_uid, holding_uid) — the eval rule is NO UN-CITED HOP.
-Reachability is a recursive walk over resolved interconnect edges (the derived
-graph read-model, DDL-001/010); no graph database involved.
+Reachability runs over the Pipeline Relationship Graph (nge/graph.py, DDL-015)
+— the foundational model of the reasoning layer — walking only DECLARED
+interconnect edges (each hop keeps the citation of the TSP posting it came
+from; synthetic traversal mirrors are never used here).
 
 Run:  PYTHONPATH=src python3 -m nge.reach --asset AlexSEG
 """
@@ -16,10 +18,67 @@ import argparse
 
 import duckdb
 
+from .graph import Graph, build
 from .store import DEFAULT_DB
 
 # Only walk edges at/above this resolution confidence (see canonical-model.md tiers).
 MIN_EDGE_CONFIDENCE = 0.9
+MAX_DEPTH = 3
+
+
+def _cross_pipe_hops(g: Graph, seed_points: list[str] | None,
+                     seed_pipe: str) -> list[tuple]:
+    """Expand cross-pipeline reachability over DECLARED interconnect edges.
+
+    Faithful port of the original recursive-CTE semantics: hop 1 starts from
+    the seed points (or from every point of the seed pipe when no segment
+    mapping exists); later hops continue PIPE-level — from any declared edge of
+    a reached pipe — never hopping straight back to the pipe just left. Only
+    g.edges (originals) are walked, never synthetic traversal mirrors, so every
+    hop cites a real TSP posting.
+
+    Returns rows (ic_uid, from_cid, to_cid, a_uid, b_uid, status, conf, depth,
+    path), deduped, deterministically ordered by (depth, to_cid, path).
+    """
+    edges = [e for e in g.edges
+             if e.kind == "interconnect"
+             and e.confidence >= MIN_EDGE_CONFIDENCE
+             and g.nodes[e.dst].kind == "point"]
+    by_pipe: dict[str, list] = {}
+    for e in edges:
+        by_pipe.setdefault(g.nodes[e.src].attr("pipeline"), []).append(e)
+
+    rows: set[tuple] = set()
+    frontier: list[tuple[str, str, str]] = []   # (from_cid, to_cid, path)
+
+    base = ([e for e in edges if e.src in set(seed_points)]
+            if seed_points is not None else by_pipe.get(seed_pipe, []))
+    for e in base:
+        from_cid = g.nodes[e.src].attr("pipeline")
+        to_cid = g.nodes[e.dst].attr("pipeline")
+        path = f"{e.src} -> {e.dst}"
+        rows.add((e.citation, from_cid, to_cid, e.src, e.dst, e.note,
+                  e.confidence, 1, path))
+        frontier.append((from_cid, to_cid, path))
+
+    depth = 2
+    while frontier and depth <= MAX_DEPTH:
+        nxt: list[tuple[str, str, str]] = []
+        for from_cid, to_cid, path in frontier:
+            for e in by_pipe.get(to_cid, []):
+                b_pipe = g.nodes[e.dst].attr("pipeline")
+                if b_pipe == from_cid:      # no immediate backtrack
+                    continue
+                new_path = f"{path} -> {e.dst}"
+                row = (e.citation, to_cid, b_pipe, e.src, e.dst, e.note,
+                       e.confidence, depth, new_path)
+                if row not in rows:
+                    rows.add(row)
+                    nxt.append((to_cid, b_pipe, new_path))
+        frontier = nxt
+        depth += 1
+
+    return sorted(rows, key=lambda r: (r[7], r[2], r[8]))
 
 
 def impact_report(con: duckdb.DuckDBPyConnection, asset: str) -> str:
@@ -86,52 +145,22 @@ def impact_report(con: duckdb.DuckDBPyConnection, asset: str) -> str:
           f" pipeline-level reachability (coarser, but nothing is hidden).")
         w("")
 
-    # 3) Recursive reachability, starting from the asset's own points when known,
-    # else from the whole constrained pipeline (graceful degradation).
-    if start_points:
-        seed_uids = [p for p, _ in start_points]
-        seed_placeholders = ",".join("?" * len(seed_uids))
-        base_where = f"i.a_point_uid IN ({seed_placeholders})"
-        base_params = list(seed_uids)
-    else:
-        base_where = "i.a_tsp_ferc_cid = ?"
-        base_params = [pipe_cid]
-
-    reach = con.execute(f"""
-        WITH RECURSIVE hops AS (
-            SELECT i.interconnect_uid, i.a_tsp_ferc_cid AS from_cid,
-                   i.b_tsp_ferc_cid AS to_cid, i.a_point_uid, i.b_point_uid,
-                   i.resolution_status, i.resolution_confidence, 1 AS depth,
-                   i.a_point_uid || ' -> ' || coalesce(i.b_point_uid,'?') AS path
-            FROM interconnect i
-            WHERE {base_where} AND i.b_tsp_ferc_cid IS NOT NULL
-              AND i.resolution_confidence >= ?
-            UNION ALL
-            SELECT i.interconnect_uid, i.a_tsp_ferc_cid, i.b_tsp_ferc_cid,
-                   i.a_point_uid, i.b_point_uid,
-                   i.resolution_status, i.resolution_confidence, h.depth + 1,
-                   h.path || ' -> ' || coalesce(i.b_point_uid,'?')
-            FROM interconnect i
-            JOIN hops h ON i.a_tsp_ferc_cid = h.to_cid
-            WHERE i.b_tsp_ferc_cid IS NOT NULL
-              AND i.b_tsp_ferc_cid <> h.from_cid          -- no immediate backtrack
-              AND i.resolution_confidence >= ?
-              AND h.depth < 3
-        )
-        SELECT DISTINCT h.interconnect_uid, h.from_cid, h.to_cid, h.a_point_uid,
-               h.b_point_uid, h.resolution_status, h.resolution_confidence,
-               h.depth, h.path, p.name, p.is_portfolio
-        FROM hops h JOIN pipeline p ON p.ferc_cid = h.to_cid
-        ORDER BY h.depth, h.to_cid
-    """, [*base_params, MIN_EDGE_CONFIDENCE, MIN_EDGE_CONFIDENCE]).fetchall()
+    # 3) Reachability over the Pipeline Relationship Graph (DDL-015), seeded at
+    # the asset's own points when known, else the whole constrained pipeline
+    # (graceful degradation). Declared edges only — every hop stays cited.
+    g = build(con)
+    seed_uids = [p for p, _ in start_points] if start_points else None
+    reach = _cross_pipe_hops(g, seed_uids, pipe_cid)
 
     w(f"Downstream/upstream pipelines reachable from {pipe_code} over edges with"
       f" confidence >= {MIN_EDGE_CONFIDENCE}:")
     if not reach:
         w("  (none at this confidence — ingest more counterparty point catalogs)")
     affected_cids: list[str] = []
-    for (ic_uid, _f, to_cid, a_pt, b_pt, status, conf, depth, path, name,
-         portfolio) in reach:
+    for (ic_uid, _from, to_cid, a_pt, b_pt, status, conf, depth, path) in reach:
+        pipe_node = g.nodes[to_cid]
+        portfolio = pipe_node.attr("is_portfolio", False)
+        name = pipe_node.attr("name", to_cid)
         flag = "PORTFOLIO PIPE" if portfolio else "external"
         w(f"  hop {depth}: {path}")
         w(f"         -> {name} [{to_cid}] ({flag})")
