@@ -7,9 +7,11 @@ contracts), normalizes it into one **canonical, bitemporal, provenance-tracked**
 and enables **AI-driven impact analysis** — e.g. *"how does this CGT/AlexSEG maintenance
 affect SESH and my deliveries?"*
 
-> **Status: Phase 1 — design-first.** No UI, no automated ingestion, no full pipelines yet.
-> The priority is architecture, correctness, and maintainability. Human judgment stays at
-> the center of every scheduling action.
+> **Status: Era 1 (knowledge engine) complete — Era 2 (operational intelligence) designed
+> and ready to build.** Design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md).
+> Backlog: [`docs/roadmap.md`](docs/roadmap.md) (milestones OI-1…OI-7). No UI yet.
+> The priority is architecture, correctness, explainability, and maintainability.
+> Human judgment stays at the center of every scheduling action.
 
 ## Why this exists
 Schedulers lose time hopping between EBBs, tariffs, maps, and notices to reason about
@@ -19,12 +21,14 @@ downstream effects. This engine builds the model *once*, keeps it correct over t
 ## What's here now
 | Path | What |
 |---|---|
-| [`docs/architecture.md`](docs/architecture.md) | Layered architecture + the relational-core/derived-graph decision |
+| [`docs/operational-intelligence.md`](docs/operational-intelligence.md) | **Era 2 design**: impact engine, relationship graph, constraint propagation, timeline, morning brief, NL query — 6 capabilities × 9 aspects |
+| [`docs/roadmap.md`](docs/roadmap.md) | **Backlog**: epics OI-1…OI-7 with issues, dependency order, definition of done |
+| [`docs/architecture.md`](docs/architecture.md) | Layered architecture + the relational-core/derived-graph + deterministic-core/LLM-shell decisions |
 | [`docs/data-sources.md`](docs/data-sources.md) | Source inventory, format families, the FERC-CID/loc keys that join them |
 | [`docs/canonical-model.md`](docs/canonical-model.md) | Entities, bitemporal convention, interconnect resolution tiers |
 | [`docs/extraction-schema.md`](docs/extraction-schema.md) | Notice→typed-facts schema, worked on the AlexSEG notice |
 | [`docs/eval-approach.md`](docs/eval-approach.md) | How each layer is measured for correctness |
-| [`docs/design-decision-log.md`](docs/design-decision-log.md) | Living decision log (DDL-001…013) |
+| [`docs/design-decision-log.md`](docs/design-decision-log.md) | Living decision log (DDL-001…020) |
 | [`schema/canonical.sql`](schema/canonical.sql) | Bitemporal DDL (DuckDB dialect) |
 | [`src/nge/models/facts.py`](src/nge/models/facts.py) | Typed fact models (`Notice`, `CapacityImpactFact`) |
 | [`src/nge/tools/parse_cgt_locations.py`](src/nge/tools/parse_cgt_locations.py) | CGT's TC eConnects location PDF → point catalog CSV |
@@ -54,23 +58,24 @@ Personal/local, **public FERC informational-postings data only**. Cloud LLM (Fab
 acceptable because the data is public. Nomination volumes / positions / trade intent are
 **out of scope** in this configuration.
 
-## Roadmap (high level)
-1. ✅ Phase 0 — architecture discovery + decision log.
-2. ✅ Phase 1 — canonical schema, entity-resolution proof, extraction schema, eval plan.
-3. ✅ Phase 2 — stack locked (Python+DuckDB), canonical store loads, **cited impact
-   analysis works end-to-end** (`nge.reach`).
-4. ✅ Phase 3 — extraction eval harness + regex baseline (`nge.extract`); **all 5
-   portfolio pipes' point catalogs landed and real** (SESH, Sabine, Egan, Bobcat via
-   Firecrawl; CGT parsed from its TC eConnects PDF). Two new confidence-1.0
-   cross-pipeline round-trips: CGT↔Egan, CGT↔Sabine. Segment→asset mapping
-   (`segment_asset_map`, DDL-013) lets `nge.reach` cite CGT's *specific points*
-   (e.g. `4208D`/`4208R`) for an asset like AlexSEG, not just "the whole pipeline."
-   Along the way, found a genuine cross-EBB data-staleness case (SESH references
-   CGT's retired point `4208` instead of the split `4208D`/`4208R`) and surfaced it
-   rather than hiding it. Open gaps: Sabine Hub Services (distinct entity from Sabine
-   Pipe Line, EBB location unconfirmed), storage-balance fact schema — see
-   `docs/design-decision-log.md` open items.
-5. ⬜ Phase 4 (remaining) — LLM extraction step vs. the regex baseline on a growing
-   gold set; resolve Sabine Hub Services; storage-balance fact schema; broaden
-   ingestion to more counterparty point catalogs named by `resolved_cid_only` edges.
-6. ⬜ Later — minimal operational workspace UI.
+## Roadmap
+
+**Era 1 — Knowledge Engine: ✅ complete** (repo phases 0–4, commits `fbea0bc`…`44d7686`).
+Canonical bitemporal store · cross-pipeline entity resolution with confidence tiers
+(two 1.0 round-trips: CGT↔Egan, CGT↔Sabine; one genuine cross-EBB staleness finding
+surfaced: SESH still references CGT's retired point `4208`) · all 5 portfolio pipes'
+point catalogs landed and real · segment→asset mapping (DDL-013) · cited point-level
+impact analysis · extraction eval harness with span gate · 17/17 tests.
+
+**Era 2 — Operational Intelligence: 🎯 designed, ready to build.** Ingestion breadth is
+frozen; the complexity budget moves to reasoning. Six capabilities — Operational Impact
+Engine, Pipeline Relationship Graph, Constraint Propagation, Operational Timeline,
+Morning Brief, NL Query — governed by *deterministic core / LLM shell* (DDL-014),
+*exposure-not-prediction* (DDL-017), and *works-without-an-API-key* principles.
+Full design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md).
+Milestones OI-1…OI-7 with dependencies and definitions of done:
+[`docs/roadmap.md`](docs/roadmap.md).
+
+**Era 3 — horizon (not committed):** scheduled brief delivery, OAC/storage-balance
+ingestion (activates quantitative propagation), multi-turn copilot, minimal
+operational workspace UI over the OI facade.
