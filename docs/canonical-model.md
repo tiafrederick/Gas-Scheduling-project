@@ -28,6 +28,8 @@ in scheduling (a notice gets revised; a rate's effective date differs from when 
 | `capacity_impact_fact` | one extracted number | `fact_uid`; valid time = gas-day window |
 | `rate_fact` | one rate component | `rate_uid`; valid time = effective window |
 | `operational_capacity_fact` | point × gas_day × cycle | `cap_uid` (shape stubbed) |
+| `market_hub` / `hub_member` | curated hub + point memberships (DDL-015) | `hub_id`; member rows carry confidence + evidence |
+| `operational_event` | one scheduler-tracked event, possibly aggregating a notice CHAIN (DDL-016) | `event_uid`; time-independent `lifecycle_status` + pure `nge.events.status_at()` for as-of status |
 
 `point.pipeline_seg_cd` carries the TC eConnects segment code (e.g. `ALEXDRIA`) for CGT
 points — the only portfolio-pipe export that has one. `segment_asset_map` joins that code

@@ -247,7 +247,32 @@ def load_notice_and_facts(con) -> None:
              f["source_span"], f["extraction_method"], f["confidence"]])
 
 
+def load_notice_index_fixtures(con) -> None:
+    """Load notice-INDEX fixtures (headers + subjects, no bodies) — the OI-1
+    event corpus. See data/fixtures/notices/*.json _comment for provenance."""
+    fixture_dir = os.path.join(REPO, "data", "fixtures", "notices")
+    if not os.path.isdir(fixture_dir):
+        return
+    for fname in sorted(os.listdir(fixture_dir)):
+        if not fname.endswith(".json") or ".expected_" in fname:
+            continue
+        path = os.path.join(fixture_dir, fname)
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        tsp = data["tsp_ferc_cid"]
+        rel = os.path.relpath(path, REPO)
+        for n in data["notices"]:
+            con.execute(
+                "INSERT INTO notice (notice_uid, tsp_ferc_cid, notice_id,"
+                " notice_type, critical, subject, post_dt, effective_dt,"
+                " end_dt, source_file) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                [f"{tsp}:{n['notice_id']}", tsp, n["notice_id"],
+                 n["notice_type"], n["critical"], n["subject"], n["post_dt"],
+                 n["effective_dt"], n["end_dt"], rel])
+
+
 def load_all(db_path: str = DEFAULT_DB):
+    from .events import derive_events
     con = create_db(db_path, fresh=True)
     load_pipelines(con)
     load_points_and_interconnects(con)
@@ -255,6 +280,8 @@ def load_all(db_path: str = DEFAULT_DB):
     load_market_hubs(con)
     load_index_of_customers(con)
     load_notice_and_facts(con)
+    load_notice_index_fixtures(con)
+    derive_events(con)
     return con
 
 

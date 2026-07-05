@@ -238,3 +238,33 @@ CREATE TABLE IF NOT EXISTS hub_member (
     confidence  DOUBLE NOT NULL,                 -- curation confidence, 0..1
     note        VARCHAR NOT NULL                 -- the evidence for membership
 );
+
+-- ---------------------------------------------------------------------------
+-- EVENT: operational_event (DDL-016) — a deterministic, rebuildable projection
+-- of notices into scheduler-meaningful events. One event may aggregate a CHAIN
+-- of notices (Initiate -> UPDATE: -> COMPLETED:); a REVISED notice creates a
+-- NEW event that supersedes its target (both kept — correction history is
+-- operational signal).
+--
+-- lifecycle_status is notice-derived and time-INdependent
+-- (posted|updated|completed|superseded); the operational status a scheduler
+-- sees (planned|active|completed) is a pure function of
+-- (window, lifecycle_status, as_of) — nge.events.status_at() — keeping
+-- derivation fully deterministic and goldens stable over time.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS operational_event (
+    event_uid            VARCHAR PRIMARY KEY,
+    tsp_ferc_cid         VARCHAR NOT NULL REFERENCES pipeline(ferc_cid),
+    event_type           VARCHAR NOT NULL,      -- maintenance|capacity_constraint|force_majeure|restoration|rate_change|other (ofo reserved)
+    asset_name           VARCHAR NOT NULL,      -- human name: 'Banner Compressor Station'
+    asset_key            VARCHAR NOT NULL,      -- normalized chain key ('#revised' suffix on superseding events)
+    seg_cd               VARCHAR,               -- via segment_asset_map; NULL = unmapped (surfaced, never guessed)
+    lifecycle_status     VARCHAR NOT NULL,      -- posted|updated|completed|superseded
+    valid_from           DATE,
+    valid_to             DATE,
+    window_source        VARCHAR NOT NULL,      -- fact|subject|effective_date
+    supersedes_event_uid VARCHAR,
+    source_notice_uids   VARCHAR[] NOT NULL,
+    confidence           DOUBLE NOT NULL,       -- window confidence: fact .97 / subject .85 / effective_date .6
+    system_recorded_at   TIMESTAMP DEFAULT now()
+);

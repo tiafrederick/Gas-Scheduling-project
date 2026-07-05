@@ -40,16 +40,22 @@ downstream effects. This engine builds the model *once*, keeps it correct over t
 ```bash
 pip install duckdb pydantic          # core stack (DDL-011); spike/tests run stdlib-only
 
-# Build the canonical DuckDB store from landed samples/fixtures
+# Build the canonical DuckDB store (points, interconnects, contracts, notices,
+# hub seeds, and 11 derived operational events from the 15-notice corpus)
 PYTHONPATH=src python3 -m nge.load
 
-# The v1 vertical slice: cited cross-pipeline impact analysis
+# The Pipeline Relationship Graph — the reasoning engine's foundational model
+PYTHONPATH=src python3 -m nge.graphq stats
+PYTHONPATH=src python3 -m nge.graphq explain C000307:4123 C000086:45103   # CGT <-> Egan, cited + flow-worded
+PYTHONPATH=src python3 -m nge.graphq neighbors C000307:519                # CGT's Henry Hub point
+
+# Cited cross-pipeline impact analysis (now graph-backed)
 PYTHONPATH=src python3 -m nge.reach --asset AlexSEG
 
 # Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests (17: entity resolution + extraction eval + loader + cited reachability)
+# Tests (41: resolution, extraction eval, loader, reach golden, graph, events)
 python3 -m unittest discover -s tests -v
 ```
 

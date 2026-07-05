@@ -56,61 +56,78 @@ dependencies' DoD is met.
 
 ---
 
-## Epic OI-1 — Event Foundation
+## Epic OI-1 — Event Foundation ✅ *(delivered; see commit log)*
 *Goal: notices become first-class operational events with status semantics.
 Design: OI doc §4.4–4.5 (events), §0.1 (corpus rationale). Depends: none.*
 
-### Issue OI-1.1 — Notice fixture corpus (S)
-Hand-label ~8–12 notices from `CGT Notices.pdf` (already in the original upload; land
-the PDF to `data/raw/cgt/` with sidecar) as gold fixtures using the existing
-`*.expected_facts.json` pattern. Must span: Maintenance, Capacity Constraint, Force
-Majeure, an `UPDATE:`, a `COMPLETED:`, a `REVISED` supersession pair.
-**Acceptance:** fixtures load via `nge.load`; extraction eval runs over all (baseline
-scores reported, not required to be 1.0 — that's the point of a broader gold set);
-corpus documented in `docs/data-sources.md`.
+### Issue OI-1.1 — Notice fixture corpus (S) ✅
+~~Hand-label ~8–12 notices as extraction gold~~ **Honesty correction applied during
+implementation:** `CGT Notices.pdf` is an *index* — headers + subjects, no bodies
+(only 26092015/AlexSEG has a full body). Index fixtures therefore grow the **event
+derivation gold set**, not the extraction gold set. Delivered: PDFs landed to
+`data/raw/cgt/2026-07-04/` with sidecars; 14 index records in
+`data/fixtures/notices/cgt_notice_index_2026-06.json` spanning Maintenance /
+Capacity Constraint / Force Majeure, a 3-notice `UPDATE:`→`COMPLETED:` chain, a
+3-notice FM chain, a `REVISED` supersession pair, and two windowed BannSEG jobs;
+hand-derived event gold in `...expected_events.json`.
 
-### Issue OI-1.2 — `operational_event` table + derivation (M)
-`schema/canonical.sql` additions per OI doc §4.5; `nge/events.py` `derive_events()`
-implementing the status machine (§4.4), idempotent, wired into `nge.load`.
-**Acceptance:** every corpus notice yields exactly one event (supersession pairs
-linked via `supersedes_event_uid`); status-machine table tests pass for all observed
-idioms; re-derivation is a no-op diff.
+### Issue OI-1.2 — `operational_event` table + derivation (M) ✅
+Delivered: `operational_event` in schema (implementation refinement vs. OI doc §4.5:
+the stored column is time-INdependent `lifecycle_status` — posted/updated/completed/
+superseded — and the operational status a scheduler sees is the pure function
+`nge.events.status_at(window, lifecycle, as_of)`, keeping derivation deterministic
+and goldens time-stable); `nge/events.py` chains notices by *facility phrase* (not
+SEG code — Banner and New Albany are both BannSEG but are separate jobs), REVISED
+creates a superseding event, COMPLETED pins valid_to, windows from fact(0.97) >
+subject(0.85) > effective_date(0.60) with source recorded. 15 notices → 11 events,
+derivation matches the hand-derived gold 11/11; idempotent; wired into `nge.load`.
+The gold caught one real bug pre-commit (an FM UPDATE's effective date must never
+pin an open event's end date) — the eval discipline paying for itself.
 
-### Issue OI-1.3 — Event golden scenario (S)
-AlexSEG notice ⇒ event `maintenance`, window 2026-07-08→10, correct planned/active/
-completed status at three different `as_of` dates.
-**Acceptance:** test asserts all three; added to invariant suite.
+### Issue OI-1.3 — Event golden scenario (S) ✅
+AlexSEG ⇒ maintenance event, window 2026-07-08→10 (window_source=fact, from the
+extracted gas days), seg ALEXDRIA; `status_at` asserts planned@Jul-05 /
+active@Jul-09 / completed@Jul-11, open-ended FM stays active, superseded wins.
 
-**Milestone DoD extras:** ≥8 events in store; ≥3 distinct event types; ≥1 supersession
-chain.
+**Milestone DoD: MET** — 11 events (≥8 ✓); 3 event types ✓; 1 supersession chain ✓;
+2 multi-notice chains ✓; tests 41/41 green in no-LLM mode ✓; store rebuilds ✓.
 
 ---
 
-## Epic OI-2 — Relationship Graph
-*Goal: first-class typed graph projection. Design: OI doc §3. Depends: none.*
+## Epic OI-2 — Relationship Graph ✅ *(delivered: commit `a86da78`)*
+*Goal: first-class typed graph projection — THE foundational model the reasoning
+engine operates on. Design: OI doc §3. Depends: none.*
 
-### Issue OI-2.1 — `nge/graph.py` projection (M)
-Typed nodes/edges per §3.3, built from canonical tables; stdlib only.
-**Acceptance:** reconciliation tests (counts by kind == SQL); known-path goldens
-(CGT↔Egan 1.0, CGT↔Sabine 1.0, SESH↔CGT 0.9 preserved).
+### Issue OI-2.1 — `nge/graph.py` projection (M) ✅
+Delivered with three scheduler-thinking upgrades challenged into the design before
+coding: (1) interconnect edges carry **flow direction** from Dir Flo codes —
+explanations say "receives from"/"delivers to", not "connected to"; (2)
+**active_only** traversal default with retired nodes flagged `[RETIRED]` (the
+SESH→4208 staleness is enforced behavior now); (3) **lead edges** (CID-only
+counterparties, 0.6) visible in neighbors() but excluded from recommended paths
+(paths default min_conf=0.7, deliberately above the lead tier). Reconciliation +
+known-path goldens all pass; ~16ms build.
 
-### Issue OI-2.2 — `market_hub` / `hub_member` seed tables (S)
-Schema + curated seed (HENRY ← Sabine 11202 + CGT 519; PERRYVILLE cluster), confidence
-+ evidence notes, loaded in `nge.load`.
-**Acceptance:** seed rows pinned by tests; `hub:HENRY` reachable in graph.
+### Issue OI-2.2 — `market_hub` / `hub_member` seed tables (S) ✅
+HENRY (Sabine 11202 + CGT 519 @0.95) and PERRYVILLE (4235 @0.9, 5112 @0.85,
+4209 @0.7) with per-row evidence notes; FK to `point` makes a typo'd membership
+fail loudly at load. Seed rows pinned by tests; `hub:HENRY` 1 hop from CGT 519.
 
-### Issue OI-2.3 — Path/subgraph APIs + CLI (M)
-`paths/neighbors/subgraph/to_json/to_dot`, `min_confidence` filter,
-`python3 -m nge.graphq`.
-**Acceptance:** property tests (min-composition, hop bounds); `paths(C000307:519,
-hub:HENRY)` returns a 1-hop 0.95 path.
+### Issue OI-2.3 — Path/subgraph APIs + CLI (M) ✅
+`paths/neighbors/subgraph/stats/to_json/to_dot` + `PathResult.explain()` (hop-by-hop,
+cited, flow-worded, confidence = min of edges); `python3 -m nge.graphq
+stats|neighbors|paths|explain`. Property tests: min-composition, no confidence
+inflation with hops, hop bounds, build determinism.
 
-### Issue OI-2.4 — Refactor `nge/reach.py` onto the graph (S)
-Replace inline recursive CTE with graph traversal; identical report output
-(golden-pinned before refactor).
-**Acceptance:** existing 17 tests untouched and green; reach output byte-identical.
+### Issue OI-2.4 — Refactor `nge/reach.py` onto the graph (S) ✅
+Recursive CTE replaced by a faithful walk over DECLARED edges only (synthetic
+traversal mirrors never used — every hop keeps its TSP-posting citation). Output
+proven line-set-identical to the pre-refactor golden; golden then re-pinned because
+the old CTE's tie-ordering (4208R before 4208D) was DuckDB-nondeterministic and the
+graph version sorts deterministically. All prior string assertions untouched.
 
-**Milestone DoD extras:** no networkx in core imports; graph build <1s at current scale.
+**Milestone DoD: MET** — no networkx in core ✓; build ~16ms ✓; 14 new tests,
+31/31 at commit ✓.
 
 ---
 

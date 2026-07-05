@@ -1,0 +1,66 @@
+{
+  "_comment": "Hand-derived EVENT gold for the OI-1 corpus (index fixtures + the AlexSEG full gold notice). This is what nge/events.py derivation must produce — the derivation eval target, mirroring the extraction-gold pattern. Keys are normalized asset_keys; a '#revised' suffix marks a REVISED-created superseding event. lifecycle_status is notice-derived (posted|updated|completed|superseded) and time-independent; operational status (planned/active/completed) is a pure function of (window, lifecycle, as_of) tested separately.",
+  "events": {
+    "east lateral-310 pigging (4267)": {
+      "event_type": "maintenance", "asset_name": "East Lateral-310 Pigging (4267)",
+      "seg_cd": null, "lifecycle_status": "completed",
+      "valid_from": "2026-06-24", "valid_to": "2026-06-26",
+      "window_source": "subject", "n_sources": 3, "supersedes_key": null},
+    "corinth compressor station": {
+      "event_type": "force_majeure", "asset_name": "Corinth Compressor Station",
+      "seg_cd": null, "lifecycle_status": "updated",
+      "valid_from": "2026-06-19", "valid_to": null,
+      "window_source": "subject", "n_sources": 3, "supersedes_key": null},
+    "capacity posting - tim for june 23, 2026": {
+      "event_type": "capacity_constraint",
+      "asset_name": "CAPACITY POSTING - TIM for June 23, 2026",
+      "seg_cd": null, "lifecycle_status": "superseded",
+      "valid_from": "2026-06-23", "valid_to": "2026-06-23",
+      "window_source": "subject", "n_sources": 1, "supersedes_key": null},
+    "capacity posting - tim for june 23, 2026#revised": {
+      "event_type": "capacity_constraint",
+      "asset_name": "CAPACITY POSTING - TIM for June 23, 2026 (REVISED)",
+      "seg_cd": null, "lifecycle_status": "posted",
+      "valid_from": "2026-06-23", "valid_to": "2026-06-23",
+      "window_source": "subject", "n_sources": 1,
+      "supersedes_key": "capacity posting - tim for june 23, 2026"},
+    "banner compressor station": {
+      "event_type": "maintenance", "asset_name": "Banner Compressor Station",
+      "seg_cd": "BANNER", "lifecycle_status": "posted",
+      "valid_from": "2026-07-08", "valid_to": "2026-08-18",
+      "window_source": "subject", "n_sources": 1, "supersedes_key": null},
+    "new albany compressor station": {
+      "event_type": "maintenance", "asset_name": "New Albany Compressor Station",
+      "seg_cd": "BANNER", "lifecycle_status": "posted",
+      "valid_from": "2026-06-23", "valid_to": "2026-06-26",
+      "window_source": "subject", "n_sources": 1, "supersedes_key": null},
+    "grayson compressor station": {
+      "event_type": "maintenance", "asset_name": "Grayson Compressor Station",
+      "seg_cd": "STANTON", "lifecycle_status": "completed",
+      "valid_from": "2026-06-13", "valid_to": "2026-06-13",
+      "window_source": "subject", "n_sources": 1, "supersedes_key": null},
+    "paradis lateral pipeline": {
+      "event_type": "maintenance", "asset_name": "Paradis Lateral Pipeline",
+      "seg_cd": "HouLn100", "lifecycle_status": "completed",
+      "valid_from": "2026-06-08", "valid_to": "2026-06-08",
+      "window_source": "subject", "n_sources": 1, "supersedes_key": null},
+    "capacity posting - tim for july 3, 2026, through july 6, 2026": {
+      "event_type": "capacity_constraint",
+      "asset_name": "CAPACITY POSTING - TIM for July 3, 2026, through July 6, 2026",
+      "seg_cd": null, "lifecycle_status": "posted",
+      "valid_from": "2026-07-03", "valid_to": "2026-07-06",
+      "window_source": "subject", "n_sources": 1, "supersedes_key": null},
+    "capacity posting - tim for july 2, 2026": {
+      "event_type": "capacity_constraint",
+      "asset_name": "CAPACITY POSTING - TIM for July 2, 2026",
+      "seg_cd": null, "lifecycle_status": "posted",
+      "valid_from": "2026-07-02", "valid_to": "2026-07-02",
+      "window_source": "subject", "n_sources": 1, "supersedes_key": null},
+    "alexandria and chicot compressor station": {
+      "event_type": "maintenance",
+      "asset_name": "Alexandria and Chicot Compressor Station",
+      "seg_cd": "ALEXDRIA", "lifecycle_status": "posted",
+      "valid_from": "2026-07-08", "valid_to": "2026-07-10",
+      "window_source": "fact", "n_sources": 1, "supersedes_key": null}
+  }
+}
