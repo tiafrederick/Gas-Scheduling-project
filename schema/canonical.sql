@@ -268,3 +268,27 @@ CREATE TABLE IF NOT EXISTS operational_event (
     confidence           DOUBLE NOT NULL,       -- window confidence: fact .97 / subject .85 / effective_date .6
     system_recorded_at   TIMESTAMP DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- FACT: event_impact (DDL-017) — the constraint-propagation materialization.
+-- One row per (event, affected subject): exposure + a recommended
+-- investigation, NEVER a flow prediction (public-data ceiling). Rebuildable
+-- deterministic projection, like operational_event. Citations are typed
+-- 'kind:uid' refs (evt:/fact:/point:/ic:/segmap:/holding:) — the integrity
+-- test resolves every one against its table.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS event_impact (
+    impact_uid          VARCHAR PRIMARY KEY,
+    event_uid           VARCHAR NOT NULL REFERENCES operational_event(event_uid),
+    subject_uid         VARCHAR NOT NULL,      -- point_uid | pipeline ferc_cid | holding_uid
+    subject_kind        VARCHAR NOT NULL,      -- point | pipeline | holding
+    reason_code         VARCHAR NOT NULL,      -- on_constrained_segment | downstream_interconnect
+                                               -- | contract_at_affected_point | storage_service_at_risk
+                                               -- | on_constrained_pipeline (unmapped-asset degradation)
+    hop_distance        INTEGER NOT NULL,
+    severity            VARCHAR NOT NULL,      -- after hop decay
+    confidence          DOUBLE NOT NULL,       -- min-chain (DDL-015 algebra)
+    investigation       VARCHAR NOT NULL,      -- the human instruction
+    citations           VARCHAR[] NOT NULL,
+    system_recorded_at  TIMESTAMP DEFAULT now()
+);

@@ -7,11 +7,13 @@ contracts), normalizes it into one **canonical, bitemporal, provenance-tracked**
 and enables **AI-driven impact analysis** — e.g. *"how does this CGT/AlexSEG maintenance
 affect SESH and my deliveries?"*
 
-> **Status: Era 1 (knowledge engine) complete — Era 2 (operational intelligence) designed
-> and ready to build.** Design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md).
-> Backlog: [`docs/roadmap.md`](docs/roadmap.md) (milestones OI-1…OI-7). No UI yet.
-> The priority is architecture, correctness, explainability, and maintainability.
-> Human judgment stays at the center of every scheduling action.
+> **Status: Era 1 (knowledge engine) complete · Era 2 (operational intelligence) in
+> build — OI-1 Events, OI-2 Relationship Graph, and OI-3 Constraint Propagation
+> delivered; next: OI-4 Timeline.** Design:
+> [`docs/operational-intelligence.md`](docs/operational-intelligence.md) · Backlog:
+> [`docs/roadmap.md`](docs/roadmap.md). No UI yet. The priority is architecture,
+> correctness, explainability, and maintainability. Human judgment stays at the
+> center of every scheduling action.
 
 ## Why this exists
 Schedulers lose time hopping between EBBs, tariffs, maps, and notices to reason about
@@ -49,13 +51,14 @@ PYTHONPATH=src python3 -m nge.graphq stats
 PYTHONPATH=src python3 -m nge.graphq explain C000307:4123 C000086:45103   # CGT <-> Egan, cited + flow-worded
 PYTHONPATH=src python3 -m nge.graphq neighbors C000307:519                # CGT's Henry Hub point
 
-# Cited cross-pipeline impact analysis (now graph-backed)
-PYTHONPATH=src python3 -m nge.reach --asset AlexSEG
+# The Operational Impact Engine: severity + investigations + as-of status,
+# every element cited (nge.reach remains as the Era-1 golden, deprecated)
+PYTHONPATH=src python3 -m nge.impact --asset AlexSEG --as-of 2026-07-08
 
 # Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests (41: resolution, extraction eval, loader, reach golden, graph, events)
+# Tests (58: resolution, extraction eval, loader, reach golden, graph, events, propagation)
 python3 -m unittest discover -s tests -v
 ```
 
@@ -73,13 +76,16 @@ surfaced: SESH still references CGT's retired point `4208`) · all 5 portfolio p
 point catalogs landed and real · segment→asset mapping (DDL-013) · cited point-level
 impact analysis · extraction eval harness with span gate · 17/17 tests.
 
-**Era 2 — Operational Intelligence: 🎯 designed, ready to build.** Ingestion breadth is
-frozen; the complexity budget moves to reasoning. Six capabilities — Operational Impact
-Engine, Pipeline Relationship Graph, Constraint Propagation, Operational Timeline,
-Morning Brief, NL Query — governed by *deterministic core / LLM shell* (DDL-014),
-*exposure-not-prediction* (DDL-017), and *works-without-an-API-key* principles.
-Full design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md).
-Milestones OI-1…OI-7 with dependencies and definitions of done:
+**Era 2 — Operational Intelligence: 🔨 in build.** Ingestion breadth is frozen; the
+complexity budget moves to reasoning, governed by *deterministic core / LLM shell*
+(DDL-014), *exposure-not-prediction* (DDL-017), and *works-without-an-API-key*
+principles. Delivered: **OI-1** operational events (15 notices → 11 events; chains,
+supersession, pure `status_at`), **OI-2** the Pipeline Relationship Graph (typed,
+flow-worded, cited, min-composition confidence — the reasoning engine's foundational
+model), **OI-3** constraint propagation + the Impact Engine (severity with printed
+components, direction rule, recommended investigations, citation-integrity-tested).
+Remaining: OI-4 Timeline → OI-5 Morning Brief → OI-6 LLM + NL Query → OI-7 facade.
+Full design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md) ·
 [`docs/roadmap.md`](docs/roadmap.md).
 
 **Era 3 — horizon (not committed):** scheduled brief delivery, OAC/storage-balance

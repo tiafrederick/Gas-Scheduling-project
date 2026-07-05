@@ -273,6 +273,7 @@ def load_notice_index_fixtures(con) -> None:
 
 def load_all(db_path: str = DEFAULT_DB):
     from .events import derive_events
+    from .propagate import derive_impacts
     con = create_db(db_path, fresh=True)
     load_pipelines(con)
     load_points_and_interconnects(con)
@@ -282,6 +283,7 @@ def load_all(db_path: str = DEFAULT_DB):
     load_notice_and_facts(con)
     load_notice_index_fixtures(con)
     derive_events(con)
+    derive_impacts(con)
     return con
 
 

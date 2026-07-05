@@ -30,6 +30,7 @@ in scheduling (a notice gets revised; a rate's effective date differs from when 
 | `operational_capacity_fact` | point × gas_day × cycle | `cap_uid` (shape stubbed) |
 | `market_hub` / `hub_member` | curated hub + point memberships (DDL-015) | `hub_id`; member rows carry confidence + evidence |
 | `operational_event` | one scheduler-tracked event, possibly aggregating a notice CHAIN (DDL-016) | `event_uid`; time-independent `lifecycle_status` + pure `nge.events.status_at()` for as-of status |
+| `event_impact` | one (event, exposed subject) risk row: reason code, hop-decayed severity, min-chain confidence, investigation, typed citations (DDL-017) | `impact_uid`; rebuildable projection, FK to its event |
 
 `point.pipeline_seg_cd` carries the TC eConnects segment code (e.g. `ALEXDRIA`) for CGT
 points — the only portfolio-pipe export that has one. `segment_asset_map` joins that code

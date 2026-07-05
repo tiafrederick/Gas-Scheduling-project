@@ -10,6 +10,10 @@ Reachability runs over the Pipeline Relationship Graph (nge/graph.py, DDL-015)
 interconnect edges (each hop keeps the citation of the TSP posting it came
 from; synthetic traversal mirrors are never used here).
 
+DEPRECATED as the impact entry point since OI-3: use `python3 -m nge.impact`
+(severity + investigations + as-of status). This module remains as the pinned
+Era-1 golden (tests/golden/reach_alexseg.txt) until OI-7 removes it.
+
 Run:  PYTHONPATH=src python3 -m nge.reach --asset AlexSEG
 """
 from __future__ import annotations

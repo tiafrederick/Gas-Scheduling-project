@@ -133,7 +133,10 @@ def status_at(valid_from: date | None, valid_to: date | None,
 
 
 def derive_events(con) -> int:
-    """Project `notice` -> `operational_event`. Idempotent (full rebuild)."""
+    """Project `notice` -> `operational_event`. Idempotent (full rebuild).
+    event_impact is a downstream projection OF events, so it is cleared first
+    (its own derive_impacts() rebuilds it) — the FK makes the ordering law."""
+    con.execute("DELETE FROM event_impact")
     con.execute("DELETE FROM operational_event")
 
     notices = con.execute("""

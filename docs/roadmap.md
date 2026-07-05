@@ -131,29 +131,45 @@ graph version sorts deterministically. All prior string assertions untouched.
 
 ---
 
-## Epic OI-3 — Constraint Propagation
+## Epic OI-3 — Constraint Propagation ✅ *(delivered; see commit log)*
 *Goal: events → severity-graded, direction-aware, cited downstream risks +
 investigations. Design: OI doc §4. Depends: OI-1, OI-2.*
 
-### Issue OI-3.1 — Severity model (S)
-Quantitative bands + qualitative floors + max() composite + per-hop decay (§4.3), one
-constants block.
-**Acceptance:** band-edge unit tests incl. AlexSEG 13.4%+PrimaryFirm ⇒ `action`.
+### Issue OI-3.1 — Severity model (S) ✅
+`nge/severity.py`: one constants block of reviewable hypotheses (quant bands
+5%/15%, service floors, FM/OFO ⇒ critical, mapped-maintenance ⇒ watch floor,
+1-band hop decay), pure functions returning (severity, components) — no score
+without its reasons. Band-edge units pass; AlexSEG calibration case verified:
+13.4% cut (watch) + 'Primary Firm' language ⇒ **action**. UNVERIFIED cap:
+critical requires an FM/OFO event type or a human-verified fact — a
+hallucinated Dth value can never scream CRITICAL on its own (tested both ways).
 
-### Issue OI-3.2 — `event_impact` + propagation engine (L)
-`nge/propagate.py` per §4.2/§4.5–4.7: seeded BFS, direction filtering, reason codes,
-investigation strings, materialization.
-**Acceptance:** AlexSEG golden ⇒ ≥3 investigations citing 4208R/4208D/Egan-alternate;
-direction test (backhaul does not propagate along pure-forward delivery edges);
-idempotent re-run.
+### Issue OI-3.2 — `event_impact` + propagation engine (L) ✅
+`nge/propagate.py` materializes 39 impact rows from the 11-event corpus.
+Direction rule implemented and documented: a directional cut shorts what the
+pipe DELIVERS — it propagates across 'out'/'both' edges and does NOT cross a
+pure-receipt edge (the counterparty's injection-side exposure is below
+public-data resolution; the point's own on-segment row still surfaces it).
+AlexSEG golden: 14 on-segment + Perryville `storage_service_at_risk` +
+SESH downstream (decayed action→watch) + contract row whose investigation cites
+the Egan alternate (roundtrip 1.0) and two SESH receipt leads. 4208R/4208D
+direction test passes. Unmapped Corinth FM degrades honestly to a
+pipeline-scoped critical @ conf 0.5 with a fix-it instruction. Idempotent
+(FK from event_impact→operational_event makes rebuild ordering law).
 
-### Issue OI-3.3 — Impact Engine formalization (M)
-`nge/impact.py` `assess()` returning `ImpactAssessment` (§2.3), consuming
-event_impact + live graph; `nge.reach` becomes deprecated alias.
-**Acceptance:** golden assessment matches §2.7; UNVERIFIED severity cap enforced.
+### Issue OI-3.3 — Impact Engine formalization (M) ✅
+`nge/impact.py` `assess()` → typed `ImpactAssessment` with desk-style subject
+resolution (event name, SEG idiom via segment_asset_map, asset_key), as-of
+status, severity WITH components, UNVERIFIED-flagged facts, impacts grouped by
+reason, min-chain confidence roll-up, full citation list; `render()` is the
+scheduler briefing. CLI `python3 -m nge.impact --asset AlexSEG --as-of
+2026-07-08`. `nge.reach` docstring now marks it superseded (kept as the pinned
+Era-1 golden until OI-7).
 
-**Milestone DoD extras:** every `event_impact` row's `citations` chain resolves to
-real uids (integrity test).
+**Milestone DoD: MET** — citation-integrity test resolves every typed citation
+(evt:/fact:/point:/ic:/segmap:/holding:/pipeline:) against its table (>50
+checked); impact confidence never exceeds its event's (property); 17 new tests,
+58/58 green in no-LLM mode; store rebuilds from scratch.
 
 ---
 
