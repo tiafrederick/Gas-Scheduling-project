@@ -89,6 +89,17 @@ class ImpactResponse(ApiResponse):
                     f" are listed by: SELECT asset_name FROM operational_event.")
         return self.assessment.render()
 
+    def to_dict(self) -> dict:
+        from . import contract
+        if self.assessment is None:
+            return contract.envelope(
+                "impact", self.as_of, self.as_known, self.dataset, result=None,
+                error=contract.error("unknown_asset",
+                                     f"no operational event matches '{self.asset}'",
+                                     "impact"))
+        return contract.envelope("impact", self.as_of, self.as_known, self.dataset,
+                                 contract.impact_payload(self.assessment))
+
 
 @dataclass
 class TimelineResponse(ApiResponse):
@@ -96,6 +107,11 @@ class TimelineResponse(ApiResponse):
 
     def render(self) -> str:
         return self.timeline.render()
+
+    def to_dict(self) -> dict:
+        from . import contract
+        return contract.envelope("timeline", self.as_of, self.as_known, self.dataset,
+                                 contract.timeline_payload(self.timeline))
 
 
 @dataclass
@@ -142,6 +158,17 @@ class PathResponse(ApiResponse):
             out.append(p.explain())
         return "\n".join(out)
 
+    def to_dict(self) -> dict:
+        from . import contract
+        if self.error:
+            return contract.envelope("graph.path", None, None, self.dataset,
+                                     result=None,
+                                     error=contract.error("unknown_node", self.error,
+                                                          "graph.path"))
+        return contract.envelope(
+            "graph.path", None, None, self.dataset,
+            contract.path_payload(self.origin, self.destination, self.paths))
+
 
 @dataclass
 class NeighborsResponse(ApiResponse):
@@ -165,6 +192,17 @@ class NeighborsResponse(ApiResponse):
                        f" (cite {e.citation}){lead}{stale}")
         return "\n".join(out)
 
+    def to_dict(self) -> dict:
+        from . import contract
+        if self.error:
+            return contract.envelope("graph.neighbors", None, None, self.dataset,
+                                     result=None,
+                                     error=contract.error("unknown_node", self.error,
+                                                          "graph.neighbors"))
+        return contract.envelope(
+            "graph.neighbors", None, None, self.dataset,
+            contract.neighbors_payload(self.uid, self.node, self.edges, self._labels))
+
 
 @dataclass
 class StatsResponse(ApiResponse):
@@ -172,6 +210,11 @@ class StatsResponse(ApiResponse):
 
     def render(self) -> str:
         return "\n".join(f"  {k:24s} {v:5d}" for k, v in self.stats.items())
+
+    def to_dict(self) -> dict:
+        from . import contract
+        return contract.envelope("graph.stats", None, None, self.dataset,
+                                 contract.stats_payload(self.stats))
 
 
 # ---- the Engine --------------------------------------------------------------
@@ -238,7 +281,7 @@ class Engine:
         as_of = as_of or date.today()
         a = assess(self._con, asset, as_of)
         return ImpactResponse(capability="impact", as_of=as_of, assessment=a,
-                              asset=asset)
+                              asset=asset, dataset=self.dataset())
 
     # -- capability: Operational Timeline (§5) — the one honoring as_known --
     def timeline(self, date_from: date, date_to: date, pipelines=None,
@@ -250,7 +293,8 @@ class Engine:
                       assets=assets, min_severity=min_severity, as_of=as_of,
                       as_known=as_known)
         return TimelineResponse(capability="timeline", as_of=t.as_of,
-                                as_known=t.as_known, timeline=t)
+                                as_known=t.as_known, timeline=t,
+                                dataset=self.dataset())
 
     # -- capability: Morning Brief (§6) --
     def brief(self, as_of: date | None = None, since: datetime | None = None,
@@ -292,7 +336,7 @@ class Engine:
         for label, uid in (("origin", origin), ("destination", destination)):
             if uid not in g.nodes:
                 return PathResponse(capability="path", as_of=None, origin=origin,
-                                    destination=destination,
+                                    destination=destination, dataset=self.dataset(),
                                     error=f"Unknown {label} node '{uid}'. Use a"
                                           f" point uid (C000307:519), a hub"
                                           f" (hub:HENRY), or a pipeline FERC CID.")
@@ -300,20 +344,23 @@ class Engine:
                         active_only=not include_inactive, limit=limit)
         return PathResponse(capability="path", as_of=None, origin=origin,
                             destination=destination, paths=paths,
-                            max_hops=max_hops, min_conf=min_conf)
+                            max_hops=max_hops, min_conf=min_conf,
+                            dataset=self.dataset())
 
     def neighbors(self, uid: str, min_conf: float = 0.0) -> NeighborsResponse:
         g = self._graph()
         if uid not in g.nodes:
             return NeighborsResponse(capability="neighbors", as_of=None, uid=uid,
+                                     dataset=self.dataset(),
                                      error=f"Unknown graph node '{uid}'.")
         node = g.node(uid)
         edges = list(g.neighbors(uid, min_conf=min_conf))
         labels = {e.dst: (g.nodes[e.dst].label, g.nodes[e.dst].kind,
                           g.nodes[e.dst].active) for e in edges}
         return NeighborsResponse(capability="neighbors", as_of=None, uid=uid,
-                                 node=node, edges=edges, _labels=labels)
+                                 node=node, edges=edges, _labels=labels,
+                                 dataset=self.dataset())
 
     def graph_stats(self) -> StatsResponse:
         return StatsResponse(capability="graph_stats", as_of=None,
-                             stats=self._graph().stats())
+                             stats=self._graph().stats(), dataset=self.dataset())

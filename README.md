@@ -7,11 +7,11 @@ contracts), normalizes it into one **canonical, bitemporal, provenance-tracked**
 and enables **AI-driven impact analysis** — e.g. *"how does this CGT/AlexSEG maintenance
 affect SESH and my deliveries?"*
 
-> **Status: Era 1 (knowledge engine) complete · Era 2 (operational intelligence)
-> COMPLETE — OI-1 Events, OI-2 Relationship Graph, OI-3 Constraint Propagation, OI-4
-> Operational Timeline, OI-5 Morning Brief, OI-6 NL Query, and OI-7 the `nge/api.py`
-> service facade all delivered. The reasoning layer is done as a library; next is the
-> user-facing (UI/HTTP) era over the facade.** Design:
+> **Status: Era 1 complete · Era 2 (operational intelligence) COMPLETE (OI-1…OI-7) ·
+> Era 3 (application boundary) in build — Phase 1 the structured wire contract and
+> Phase 2 the MCP transport delivered; next: Phase 3 the Operations Workspace (first
+> screen = Morning Brief, over HTTP).** Design:
+> [`docs/era3-api-boundary.md`](docs/era3-api-boundary.md). 
 > [`docs/operational-intelligence.md`](docs/operational-intelligence.md) · Backlog:
 > [`docs/roadmap.md`](docs/roadmap.md). No UI yet. The priority is architecture,
 > correctness, explainability, and maintainability. Human judgment stays at the
@@ -88,10 +88,20 @@ PYTHONPATH=src python3 -c "from datetime import date; from nge.api import Engine
 with Engine() as e:
     print(e.ask('How does the AlexSEG maintenance affect SESH?', as_of=date(2026,7,8)).render())"
 
+# Era 3: structured JSON over the facade + an MCP server (the first transport).
+# Every capability response has a to_dict() envelope (contract_version, query
+# {as_of,as_known}, dataset{snapshot_id}, result, cited); the MCP stdio server
+# exposes the deterministic operations as tools for a Claude copilot — no UI, no
+# extra deps. (ask is NOT exposed: a copilot is itself the NL layer.)
+printf '%s\n%s\n' \
+ '{"jsonrpc":"2.0","id":1,"method":"initialize"}' \
+ '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"impact","arguments":{"asset":"AlexSEG","as_of":"2026-07-08"}}}' \
+ | PYTHONPATH=src python3 -m nge.mcp_server   # -> cited impact assessment as JSON
+
 # Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests (138: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline, citation-gate, brief golden, intents, NL router, api facade)
+# Tests (168: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline, citation-gate, brief golden, intents, NL router, api facade, wire contract, MCP transport)
 python3 -m unittest discover -s tests -v
 ```
 

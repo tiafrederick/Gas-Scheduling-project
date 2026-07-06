@@ -15,12 +15,16 @@ from __future__ import annotations
 
 OPERATIONS: dict[str, dict] = {
     "impact": {
-        "description": "Cited operational impact assessment for a named asset.",
+        "description": "Cited operational impact assessment for a named asset"
+                       " (e.g. AlexSEG) as of a gas day: severity, exposed BP"
+                       " contracts, and recommended investigations.",
         "kind": "query", "temporal": True, "honors_as_known": False,
         "params_schema": {"asset": {"type": "string", "required": True}},
+        "serialized": True,
     },
     "timeline": {
-        "description": "Chronological, bitemporal operational view over a date window.",
+        "description": "Chronological, bitemporal operational view over a date window,"
+                       " optionally one pipeline.",
         "kind": "query", "temporal": True, "honors_as_known": True,
         "params_schema": {
             "date_from": {"type": "string", "required": True},
@@ -28,6 +32,7 @@ OPERATIONS: dict[str, dict] = {
             "pipelines": {"type": "array"}, "assets": {"type": "array"},
             "min_severity": {"type": "string"},
         },
+        "serialized": True,
     },
     "brief": {
         "description": "Ranked, cited morning triage brief for a gas day.",
@@ -46,22 +51,34 @@ OPERATIONS: dict[str, dict] = {
         "params_schema": {"question": {"type": "string", "required": True}},
     },
     "graph.path": {
-        "description": "Cited commercial path between two points/hubs/pipelines.",
+        "description": "Cited commercial path (flow direction + min-composition"
+                       " confidence) between two points/hubs/pipelines.",
         "kind": "query", "temporal": False, "honors_as_known": False,
         "params_schema": {"origin": {"type": "string", "required": True},
                           "destination": {"type": "string", "required": True}},
+        "serialized": True,
     },
     "graph.neighbors": {
         "description": "A point's declared interconnect neighbours.",
         "kind": "query", "temporal": False, "honors_as_known": False,
         "params_schema": {"uid": {"type": "string", "required": True}},
+        "serialized": True,
     },
     "graph.stats": {
         "description": "Graph node/edge counts by kind.",
         "kind": "query", "temporal": False, "honors_as_known": False,
-        "params_schema": {},
+        "params_schema": {}, "serialized": True,
     },
 }
+
+
+def exposed() -> list[str]:
+    """Operations a read-only transport (MCP, HTTP) should expose: serialized AND
+    not a command (the one write, `brief.record`, is not on the copilot surface).
+    `ask` is intentionally NOT serialized — an MCP copilot IS the NL layer, so the
+    deterministic operations are the right tool surface (era3 §1)."""
+    return [n for n, o in OPERATIONS.items()
+            if o.get("serialized") and o["kind"] != "command"]
 
 
 def validate(operation: str, params: dict):

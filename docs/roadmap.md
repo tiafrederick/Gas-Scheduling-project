@@ -374,17 +374,28 @@ write path.
 
 Everything else in Phase 1 (full error taxonomy, `describe`, all-capability serialization, `Claim`/`Fact`, reach excision, the write path) is **[P]** — see the deferral notes in the Era-3 review appended below the roadmap discussion.
 
-### Phase 2 — First Transport: **MCP**
+### Phase 2 — First Transport: **MCP**  *(delivered; see commit log)*
 
-*Recommended because the near-term consumer is the scheduler using Claude (Fable 5) as a
-copilot — the original vision — and MCP delivers cited, deterministic Engine answers with
-zero frontend. HTTP is transport #2 (Phase 3). If the workspace screen is the sole
-near-term product, MCP may ship as a fast-follow rather than before Phase 3.*
+*The near-term consumer is the scheduler using Claude (Fable 5) as a copilot — the
+original vision — and MCP delivers cited, deterministic Engine answers with zero
+frontend. HTTP is transport #2 (Phase 3).*
 
-| Task | Purpose | Depends | Cx | Risk | User value |
-|---|---|---|---|---|---|
-| P2.1 MCP server adapter (one tool per operation, generated from the registry) | Expose the Engine to the copilot | Phase 1 | M | Med (MCP wiring; spec churn — mitigated by thin generated adapter) | **High** — English Q&A with cited answers, no UI |
-| P2.2 Conformance parity test (in-proc vs MCP ⇒ identical result) | Lock "adapters are thin" | P2.1 | L | Low | Trust |
+**Delivered:** `nge/service.py` — the transport-agnostic seam: `dispatch(engine,
+operation, params, as_of, as_known)` (validates → invokes the Engine method → returns
+the structured envelope; never raises, never leaks — `AsKnownUnsupported`/bad-date/
+unexpected all become error-as-data), `call_from_arguments` (splits the bitemporal axes
+out of flat tool args), and `tool_specs()` (registry → JSON-Schema tool specs, generated
+not hand-written). Serializers extended to `impact`/`timeline`/`graph.{path,neighbors,
+stats}` (the `Fact` value object landed with impact; graph-edge provenance is a plain
+descriptor, deliberately distinct from the Citation token). `nge/mcp_server.py` — a
+thin, **dependency-free** MCP stdio server (JSON-RPC `initialize`/`tools/list`/
+`tools/call`) whose message handler is a pure, unit-tested function delegating to
+`service`; swapping in the official `mcp` SDK later is a transport-shell change only.
+**Exposed tools:** `impact`, `timeline`, `brief`, `graph.path`, `graph.neighbors`,
+`graph.stats` — `ask` is intentionally NOT exposed (a copilot IS the NL layer) and
+`brief.record` (the write) is off the read surface. **Conformance proven:**
+`dispatch(...) == Engine.<method>(...).to_dict()` for all six ops (the adapter adds no
+shape). 16 new transport tests, 168/168 green.
 
 ### Phase 3 — Operations Workspace (first Fable 5 screen = Morning Brief)
 

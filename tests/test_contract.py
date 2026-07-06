@@ -158,13 +158,11 @@ class TestBriefSerialization(ContractBase):
 
 
 class TestUnserializedCapabilitiesFailLoud(ContractBase):
-    def test_impact_to_dict_not_yet_supported(self):
+    def test_ask_to_dict_not_yet_supported(self):
+        """`ask` is intentionally NOT serialized (a copilot is itself the NL layer,
+        era3 §1); its to_dict must fail loud, never emit a guessed shape."""
         with self.assertRaises(NotImplementedError):
-            self.e.impact("AlexSEG", as_of=date(2026, 7, 8)).to_dict()
-
-    def test_timeline_to_dict_not_yet_supported(self):
-        with self.assertRaises(NotImplementedError):
-            self.e.timeline(date(2026, 7, 1), date(2026, 7, 15)).to_dict()
+            self.e.ask("anything", as_of=date(2026, 7, 8)).to_dict()
 
 
 if __name__ == "__main__":
