@@ -328,10 +328,71 @@ caller-neutral no-path hint) replaces a pre-existing uncaught `KeyError`; 16 new
 
 ---
 
-## Era 3 horizon (not committed — recorded so Era 2 doesn't over-build)
+## Era 3 — Application Boundary + Operations Workspace
 
-Scheduled brief delivery (trigger + notifier) · OAC/storage-balance ingestion
-(activates quantitative propagation + the two stub intents) · more counterparty
-point catalogs (shrink `resolved_cid_only`) · multi-turn copilot over the intent
-registry · minimal operational workspace UI over `nge/api.py` + `Graph.to_json()`
-(DDL-005 finally retired) · LLM extractor vs. regex baseline on the grown gold set.
+*Design authority: [`era3-api-boundary.md`](./era3-api-boundary.md) (the Operation
+Contract over `nge/api.py::Engine`). Objective: minimize technical risk while
+delivering user value as early as possible. The Engine stays the single source of
+reasoning; transports are thin adapters with no business logic.*
+
+### Phase 1 — Boundary Hardening
+
+Harden `nge/api.py` into a versioned, structured, self-describing contract. All
+read-only, in-process — no transport, no frontend. Each task is classified for the
+**first user-facing release** (the first Operations Workspace screen — the Morning
+Brief): **[C]** critical before it · **[P]** postpone until after it · **[L]** long-term.
+
+| Task | Purpose | Depends | Cx | Risk | Class |
+|---|---|---|---|---|---|
+| P1.1 Operation registry (`{name, params_schema, kind, temporal, honors_as_known}`) | Single source of truth; anti-drift; feeds validation/`describe`/transports | — | L | Low | **[C]** minimal (brief entry); registry-driven *generation* is [P] |
+| P1.2 `to_dict()` + shared value objects (`Citation`, `Confidence`, `Claim`, `Fact`) | The structured contract itself | P1.1 | M | Med (expose fields some payloads only render) | **[C]** for `Citation`+`Confidence`+brief payload; `Claim`/`Fact` [P] with impact |
+| P1.3 Error-as-data taxonomy (closed code set) | Transport-neutral failures; no leaked exceptions | P1.1 | L | Low | **[P]** — minimal error shape in the envelope now; full taxonomy with 2nd op |
+| P1.4 Envelope (`contract_version`, `query`, `dataset.snapshot_id` field, `warnings[]`, read/`brief.record` split) | The stable wrapper; the one write made explicit | P1.2, P1.3 | L | Low | **[C]** (shape) — `snapshot_id` populated simply; durability machinery [L] |
+| P1.5 Boundary input validation (schema-driven) | Untrusted params can't reach a `TypeError`/SQL | P1.1 | L | Low | **[C]** minimal (brief params); full schema fuzz [P] |
+| P1.6 `describe` operation | Runtime capability discovery | P1.1 | L | Low | **[P]** — the first screen is hardcoded; needed at MCP / a generic UI |
+| P1.7 Neutralize `nge.reach` on the public surface | Don't publish a deprecated path | P1.1 | L | Low | **[P]** — not reachable from a brief-only endpoint; excise with the general transport |
+
+**Revised Phase 1 critical path (minimum for the first screen, long-term shape preserved):**
+1. Stable serialized shapes for `Citation` + `Confidence` (the expensive-to-change-later atoms).
+2. `to_dict()` for the brief payload (Brief · sections · BriefItem · ScoreComponents · DataQualityNote) composing them.
+3. The versioned envelope wrapping that payload (`contract_version`, `query{as_of,as_known}`, `dataset.snapshot_id`, `result`, `warnings[]`, minimal `error`).
+4. A one-entry operation registry (`brief`) + minimal `as_of`/param validation.
+
+Everything else in Phase 1 (full error taxonomy, `describe`, all-capability serialization, `Claim`/`Fact`, reach excision, the write path) is **[P]** — see the deferral notes in the Era-3 review appended below the roadmap discussion.
+
+### Phase 2 — First Transport: **MCP**
+
+*Recommended because the near-term consumer is the scheduler using Claude (Fable 5) as a
+copilot — the original vision — and MCP delivers cited, deterministic Engine answers with
+zero frontend. HTTP is transport #2 (Phase 3). If the workspace screen is the sole
+near-term product, MCP may ship as a fast-follow rather than before Phase 3.*
+
+| Task | Purpose | Depends | Cx | Risk | User value |
+|---|---|---|---|---|---|
+| P2.1 MCP server adapter (one tool per operation, generated from the registry) | Expose the Engine to the copilot | Phase 1 | M | Med (MCP wiring; spec churn — mitigated by thin generated adapter) | **High** — English Q&A with cited answers, no UI |
+| P2.2 Conformance parity test (in-proc vs MCP ⇒ identical result) | Lock "adapters are thin" | P2.1 | L | Low | Trust |
+
+### Phase 3 — Operations Workspace (first Fable 5 screen = Morning Brief)
+
+*The brief is the highest-value daily artifact, already fully structured and byte-stable,
+and needs no new reasoning — only serialization (P1) + a transport.*
+
+| Task | Purpose | Depends | Cx | Risk | User value |
+|---|---|---|---|---|---|
+| P3.1 HTTP/JSON adapter (thin `GET`/`POST /v1/operations/{name}`) | The transport a browser speaks | Phase 1 | M | Med (first web surface; keep thin) | Enables UI |
+| P3.2 Concurrency model (read-only connection pool; serialized writer) | Safe multi-request serving | P3.1 | M | **Med–High** (DuckDB thread-safety) | Correctness under load |
+| P3.3 Serve `brief` + `describe`; envelope drives the screen | The screen's data | P3.1, P1.6 | L | Low | — |
+| P3.4 First Fable 5 screen (render the brief envelope) | The scheduler's workspace | P3.1–3.3 | M | Med (frontend over a stable contract) | **High** — the daily brief as a screen |
+
+### Phase 4 — Intentionally postponed
+
+`ask`-structured executors (until an in-workspace NL screen) · citation durability
+across rebuilds + `/resolve` (until a caching/click-through client) · auth/multi-user ·
+`retriable`/`details` errors · `schema_hash` + CI contract-diff · deprecation-warning
+lifecycle · `impact`/`brief`-as-known reconstruction · real `capacity`/`storage`
+capabilities (OAC/storage-balance data) · scheduled brief delivery · `nge.reach`
+retirement (tracked debt) · gRPC/GraphQL (likely never).
+
+**Sequencing rule (unchanged from Era 2):** a phase starts only when its dependencies'
+exit criteria are met; no un-cited output; every transport is a thin, conformance-tested
+adapter over the one contract.
