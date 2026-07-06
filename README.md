@@ -8,8 +8,8 @@ and enables **AI-driven impact analysis** — e.g. *"how does this CGT/AlexSEG m
 affect SESH and my deliveries?"*
 
 > **Status: Era 1 (knowledge engine) complete · Era 2 (operational intelligence) in
-> build — OI-1 Events, OI-2 Relationship Graph, and OI-3 Constraint Propagation
-> delivered; next: OI-4 Timeline.** Design:
+> build — OI-1 Events, OI-2 Relationship Graph, OI-3 Constraint Propagation, and
+> OI-4 Operational Timeline delivered; next: OI-5 Morning Brief.** Design:
 > [`docs/operational-intelligence.md`](docs/operational-intelligence.md) · Backlog:
 > [`docs/roadmap.md`](docs/roadmap.md). No UI yet. The priority is architecture,
 > correctness, explainability, and maintainability. Human judgment stays at the
@@ -55,10 +55,18 @@ PYTHONPATH=src python3 -m nge.graphq neighbors C000307:519                # CGT'
 # every element cited (nge.reach remains as the Era-1 golden, deprecated)
 PYTHONPATH=src python3 -m nge.impact --asset AlexSEG --as-of 2026-07-08
 
+# The Operational Timeline: what's on across the portfolio, bitemporally.
+# --as-known reconstructs what the desk KNEW at that moment (e.g. the
+# midnight-July-2 view excludes the Jul 3-6 posting that arrived at 07:04)
+PYTHONPATH=src python3 -m nge.timeline --from 2026-06-01 --to 2026-07-15 --as-of 2026-07-05
+PYTHONPATH=src python3 -m nge.timeline --from 2026-07-01 --to 2026-07-10 --as-known 2026-07-02T00:00
+# sample line:
+#   2026-07-08 → 2026-07-10  [CGT] Alexandria and Chicot Compressor Station  maintenance  PLANNED  action  conf 0.97
+
 # Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests (58: resolution, extraction eval, loader, reach golden, graph, events, propagation)
+# Tests (72: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline)
 python3 -m unittest discover -s tests -v
 ```
 
@@ -83,8 +91,10 @@ principles. Delivered: **OI-1** operational events (15 notices → 11 events; ch
 supersession, pure `status_at`), **OI-2** the Pipeline Relationship Graph (typed,
 flow-worded, cited, min-composition confidence — the reasoning engine's foundational
 model), **OI-3** constraint propagation + the Impact Engine (severity with printed
-components, direction rule, recommended investigations, citation-integrity-tested).
-Remaining: OI-4 Timeline → OI-5 Morning Brief → OI-6 LLM + NL Query → OI-7 facade.
+components, direction rule, recommended investigations, citation-integrity-tested),
+**OI-4** the Operational Timeline (portfolio-wide, as-of status, and a true `--as-known`
+bitemporal reconstruction that re-folds the post_dt-filtered notice subset).
+Remaining: OI-5 Morning Brief → OI-6 LLM + NL Query → OI-7 facade.
 Full design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md) ·
 [`docs/roadmap.md`](docs/roadmap.md).
 

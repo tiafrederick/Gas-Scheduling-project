@@ -173,21 +173,33 @@ checked); impact confidence never exceeds its event's (property); 17 new tests,
 
 ---
 
-## Epic OI-4 — Operational Timeline
+## Epic OI-4 — Operational Timeline ✅ *(delivered; see commit log)*
 *Goal: chronological, bitemporal operational view. Design: OI doc §5. Depends: OI-1
 (richer with OI-3).*
 
-### Issue OI-4.1 — Timeline query + CLI (M)
-`nge/timeline.py` per §5.5 incl. `as_known`; `brief_run` bookkeeping table.
-**Acceptance:** ordering/window/filter tests; bitemporal golden (July-2 view excludes
-July-3 posting); supersession display test.
+### Issue OI-4.1 — Timeline query + CLI (M) ✅
+`nge/timeline.py`: window-overlap (open-ended events stay open; unknown windows
+SHOWN — hiding what we can't date would be a silent miss), pipe/asset/min-severity
+filters, hop-0 severity joined from event_impact, supersession display with the
+superseding uid. **`as_known` is real bitemporal reconstruction, not a filter:**
+the notice subset (post_dt ≤ as_known) is re-folded through the SAME pure chain
+logic derive_events uses — `events.fold_notices()`/`finalize_chains()` were
+extracted for exactly this (behavior-preserving refactor, all prior tests
+untouched). East Lateral viewed on June 25 shows lifecycle 'updated', end June 25,
+2 sources — because the COMPLETED notice didn't exist yet. `brief_run` bookkeeping
+table + `record_brief_run`/`last_brief_run` (writes only via the recorder; timeline
+reads never mutate). CLI `python3 -m nge.timeline --from --to [--pipe] [--asset]
+[--min-severity] [--as-of] [--as-known]`.
 
-### Issue OI-4.2 — Status-at-date correctness (S)
-`status_at_as_of` computed per event window vs. explicit completion notices.
-**Acceptance:** planned→active→completed flips at exact boundary dates.
+### Issue OI-4.2 — Status-at-date correctness (S) ✅
+AlexSEG flips planned→active at exactly 2026-07-08 and active→completed after
+2026-07-10 (boundary-exact tests); open-ended Corinth stays ACTIVE arbitrarily far
+out; superseded wins over window status.
 
-**Milestone DoD extras:** `python3 -m nge.timeline --from --to` documented in README
-with real output sample.
+**Milestone DoD: MET** — bitemporal golden passes (midnight-July-2 view excludes the
+Jul 3–6 posting posted 07:04 that morning); as-known supersession window test
+(original not-yet-superseded at 07:30, superseded at 08:00); as-known never mutates
+the store (tested); 14 new tests, 72/72 green; README shows a real output sample.
 
 ---
 

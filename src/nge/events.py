@@ -132,6 +132,96 @@ def status_at(valid_from: date | None, valid_to: date | None,
     return "active"
 
 
+def fold_notices(notice_rows: list[tuple], fact_windows: dict) -> dict[tuple, dict]:
+    """PURE chain fold: notice rows -> chain dicts keyed by (tsp, asset_key).
+
+    notice_rows: (notice_uid, tsp_ferc_cid, notice_id, notice_type, subject,
+    effective_dt), already ordered by (post_dt, notice_id). Pure so the
+    timeline's as-known reconstruction (OI-4) runs the SAME logic over a
+    post_dt-filtered subset — bitemporal views are never a parallel code path.
+    """
+    chains: dict[tuple, dict] = {}
+    for nuid, tsp, nid, ntype, subject, eff_dt in notice_rows:
+        stripped, marker = strip_prefixes(subject)
+        key, name = asset_key(subject)
+        if marker == "REVISED":
+            key, name = key + "#revised", name + " (REVISED)"
+        ck = (tsp, key)
+        c = chains.setdefault(ck, {
+            "tsp": tsp, "key": key, "name": name,
+            "event_type": _EVENT_TYPE.get((ntype or "").lower(), "other"),
+            "sources": [], "markers": [], "subjects": [], "from": None,
+            "to": None, "window_source": None, "completed_on": None,
+        })
+        c["sources"].append(nuid)
+        c["markers"].append(marker)
+        c["subjects"].append(subject)
+
+        # window: fact > subject > effective date (per notice; merged over chain)
+        if nuid in fact_windows:
+            f, t = fact_windows[nuid]
+            src = "fact"
+        else:
+            f, t = parse_window(subject)
+            src = "subject" if (f or t) else "effective_date"
+            if src == "effective_date" and eff_dt:
+                # An effective date marks when the INFORMATION takes effect —
+                # never when the work ends. It may open a window, not close one
+                # (a dateless FM UPDATE must not shrink an open-ended event).
+                f = eff_dt.date() if hasattr(eff_dt, "date") else eff_dt
+                t = None
+        if f and (c["from"] is None or f < c["from"]):
+            c["from"] = f
+        if t and (c["to"] is None or t > c["to"]):
+            c["to"] = t
+        rank = {"fact": 3, "subject": 2, "effective_date": 1}
+        if c["window_source"] is None or rank[src] > rank[c["window_source"]]:
+            c["window_source"] = src
+        if marker == "COMPLETED":
+            # a COMPLETED sighting pins the end of the job on its stated gas day
+            c["completed_on"] = f or c["completed_on"]
+    return chains
+
+
+def finalize_chains(chains: dict[tuple, dict]) -> list[dict]:
+    """PURE finalization: lifecycle + completion pinning + supersession links.
+    Returns event dicts sorted by (tsp, key); seg mapping and persistence stay
+    in derive_events (segment knowledge is store-level, not chain-level)."""
+    out: list[dict] = []
+    for (tsp, key), c in sorted(chains.items()):
+        markers = set(m for m in c["markers"] if m)
+        if "COMPLETED" in markers:
+            lifecycle = "completed"
+            if c["completed_on"]:
+                c["to"] = max(filter(None, [c["to"], c["completed_on"]]),
+                              default=c["completed_on"])
+        elif "UPDATE" in markers:
+            lifecycle = "updated"
+        else:
+            lifecycle = "posted"
+
+        supersedes_uid = None
+        if key.endswith("#revised"):
+            base = key[: -len("#revised")]
+            if (tsp, base) in chains:
+                supersedes_uid = _uid("evt", tsp, base)
+
+        out.append({
+            "event_uid": _uid("evt", tsp, key), "tsp": tsp, "key": key,
+            "name": c["name"], "event_type": c["event_type"],
+            "lifecycle": lifecycle, "from": c["from"], "to": c["to"],
+            "window_source": c["window_source"],
+            "supersedes_uid": supersedes_uid, "sources": c["sources"],
+            "subjects": c["subjects"],
+            "confidence": WINDOW_CONFIDENCE[c["window_source"]],
+        })
+    superseded = {e["supersedes_uid"] for e in out if e["supersedes_uid"]}
+    for e in out:
+        if e["event_uid"] in superseded:
+            e["lifecycle"] = "superseded"
+    return out
+
+
 def derive_events(con) -> int:
     """Project `notice` -> `operational_event`. Idempotent (full rebuild).
     event_impact is a downstream projection OF events, so it is cleared first
@@ -158,94 +248,29 @@ def derive_events(con) -> int:
         " FROM capacity_impact_fact WHERE valid_gas_day_from IS NOT NULL"
         " GROUP BY notice_uid").fetchall()}
 
-    chains: dict[tuple, dict] = {}
-    for nuid, tsp, nid, ntype, subject, eff_dt in notices:
-        stripped, marker = strip_prefixes(subject)
-        key, name = asset_key(subject)
-        if marker == "REVISED":
-            key, name = key + "#revised", name + " (REVISED)"
-        ck = (tsp, key)
-        c = chains.setdefault(ck, {
-            "tsp": tsp, "key": key, "name": name,
-            "event_type": _EVENT_TYPE.get((ntype or "").lower(), "other"),
-            "sources": [], "markers": [], "from": None, "to": None,
-            "window_source": None, "completed_on": None,
-        })
-        c["sources"].append(nuid)
-        c["markers"].append(marker)
-
-        # window: fact > subject > effective date (per notice; merged over chain)
-        if nuid in fact_windows:
-            f, t = fact_windows[nuid]
-            src = "fact"
-        else:
-            f, t = parse_window(subject)
-            src = "subject" if (f or t) else "effective_date"
-            if src == "effective_date" and eff_dt:
-                # An effective date marks when the INFORMATION takes effect —
-                # never when the work ends. It may open a window, not close one
-                # (a dateless FM UPDATE must not shrink an open-ended event).
-                f = eff_dt.date() if hasattr(eff_dt, "date") else eff_dt
-                t = None
-        if f and (c["from"] is None or f < c["from"]):
-            c["from"] = f
-        if t and (c["to"] is None or t > c["to"]):
-            c["to"] = t
-        rank = {"fact": 3, "subject": 2, "effective_date": 1}
-        if c["window_source"] is None or rank[src] > rank[c["window_source"]]:
-            c["window_source"] = src
-        if marker == "COMPLETED":
-            # a COMPLETED sighting pins the end of the job on its stated gas day
-            c["completed_on"] = f or c["completed_on"]
+    events = finalize_chains(fold_notices(notices, fact_windows))
 
     n = 0
-    for (tsp, key), c in sorted(chains.items()):
-        markers = set(m for m in c["markers"] if m)
-        if "COMPLETED" in markers:
-            lifecycle = "completed"
-            if c["completed_on"]:
-                c["to"] = max(filter(None, [c["to"], c["completed_on"]]),
-                              default=c["completed_on"])
-        elif "UPDATE" in markers:
-            lifecycle = "updated"
-        else:
-            lifecycle = "posted"
-
-        # supersession: a '#revised' event supersedes its base-key sibling
-        supersedes_uid = None
-        if key.endswith("#revised"):
-            base = key[: -len("#revised")]
-            if (tsp, base) in chains:
-                supersedes_uid = _uid("evt", tsp, base)
-
+    for e in events:
         # seg mapping via the SEG idiom in any source subject (DDL-013),
         # referentially checked against the point catalog's segment codes.
         seg = None
-        for nuid in c["sources"]:
-            subj = con.execute("SELECT subject FROM notice WHERE notice_uid=?",
-                               [nuid]).fetchone()[0]
+        for subj in e["subjects"]:
             m = _SEG_IDIOM_RX.search(subj or "")
             if m:
-                seg = seg_by_asset.get((tsp, m.group(1).lower()))
+                seg = seg_by_asset.get((e["tsp"], m.group(1).lower()))
                 break
-        if seg is not None and (tsp, seg) not in seg_universe:
+        if seg is not None and (e["tsp"], seg) not in seg_universe:
             raise ValueError(f"segment_asset_map points at unknown segment"
-                             f" {seg!r} for {tsp} — mapping/catalog drift")
+                             f" {seg!r} for {e['tsp']} — mapping/catalog drift")
 
         con.execute(
             "INSERT INTO operational_event (event_uid, tsp_ferc_cid, event_type,"
             " asset_name, asset_key, seg_cd, lifecycle_status, valid_from,"
             " valid_to, window_source, supersedes_event_uid, source_notice_uids,"
             " confidence) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            [_uid("evt", tsp, key), tsp, c["event_type"], c["name"], key, seg,
-             lifecycle, c["from"], c["to"], c["window_source"], supersedes_uid,
-             c["sources"], WINDOW_CONFIDENCE[c["window_source"]]])
+            [e["event_uid"], e["tsp"], e["event_type"], e["name"], e["key"], seg,
+             e["lifecycle"], e["from"], e["to"], e["window_source"],
+             e["supersedes_uid"], e["sources"], e["confidence"]])
         n += 1
-
-    # mark superseded targets
-    con.execute("""
-        UPDATE operational_event SET lifecycle_status = 'superseded'
-        WHERE event_uid IN (SELECT supersedes_event_uid FROM operational_event
-                            WHERE supersedes_event_uid IS NOT NULL)
-    """)
     return n

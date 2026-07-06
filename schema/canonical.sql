@@ -292,3 +292,17 @@ CREATE TABLE IF NOT EXISTS event_impact (
     citations           VARCHAR[] NOT NULL,
     system_recorded_at  TIMESTAMP DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- BOOKKEEPING: brief_run (OI-4/OI-5). Records each generated brief so novelty
+-- ("what's NEW since I last looked") is computable. Owned by the timeline
+-- module (the natural custodian of "what was already seen"); written only by
+-- nge.timeline.record_brief_run(), never by timeline reads.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS brief_run (
+    run_uid     VARCHAR PRIMARY KEY,
+    run_at      TIMESTAMP NOT NULL,
+    as_of       DATE NOT NULL,
+    date_from   DATE NOT NULL,
+    date_to     DATE NOT NULL
+);
