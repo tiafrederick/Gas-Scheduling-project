@@ -203,25 +203,46 @@ the store (tested); 14 new tests, 72/72 green; README shows a real output sample
 
 ---
 
-## Epic OI-5 — Morning Brief
+## Epic OI-5 — Morning Brief ✅ *(delivered; see commit log)*
 *Goal: ranked, cited, one-page daily triage. Design: OI doc §6. Depends: OI-3, OI-4.*
 
-### Issue OI-5.1 — Assembly + explainable ranking (M)
-Novelty via `brief_run`; score components per §6.2; `--explain`.
-**Acceptance:** ranking determinism; component-product property; novelty demotion test.
+### Issue OI-5.1 — Assembly + explainable ranking (M) ✅
+`nge/brief.py`: assembly = non-superseded events that are ACTIVE on the as-of gas
+day, PLANNED within a 7-day look-ahead, or freshly posted since a prior
+`brief_run` — deliberately, the FIRST brief is NOT a dump of history (novelty adds
+to assembly only when there's a real prior run; operational relevance is the
+whole filter otherwise). Score = `severity_weight × exposure_factor × novelty ×
+confidence` in one reviewable constants block; every component printed by
+`--explain` (no score without its reasons). `exposure_factor` is banded on BP firm
+Dth/d at affected points (AlexSEG's 27,000 Dth/d BP contract is the only corpus
+exposure — it lifts AlexSEG's factor to 1.25 while unexposed items stay 1.0).
+Low-confidence *critical* items are floored in with an "⚠️ unconfirmed — verify
+first" tag (Corinth FM, conf 0.5). **Acceptance met:** ranking determinism +
+component-product property + two novelty demotion tests (whole-set demotion and
+post_dt-partial) all green.
 
-### Issue OI-5.2 — Markdown template renderer (S)
-Sections Critical/Action/Watch/FYI/Data-quality; byte-stable.
-**Acceptance:** golden brief file committed; regenerating = zero diff.
+### Issue OI-5.2 — Markdown template renderer (S) ✅
+Sections Critical → Action → Watch → FYI → Data-quality, worst-first. Byte-stable:
+`generated_at` is injectable so the golden pins a fixed timestamp.
+**Acceptance met:** `tests/golden/brief_2026-07-05.md` committed; the byte-stability
+test fails loudly on any drift; regenerating twice = zero diff.
 
-### Issue OI-5.3 — Citation gate + optional LLM polish (M)
-§1.2 verifier (standalone, LLM-free, tested with planted violations); polish path
-behind it; template fallback on any gate failure.
-**Acceptance:** planted uncited sentence stripped+counted; unknown uid ⇒ full fallback;
-`--no-llm` output has zero LLM artifacts.
+### Issue OI-5.3 — Citation gate + optional LLM polish (M) ✅
+`nge/citegate.py` — the §1.2 verifier, standalone and LLM-free (reusable by OI-6
+narration): every sentence must cite ≥1 uid from the input bundle; uncited
+sentences are stripped and counted; a single unknown uid fails the WHOLE narration.
+The brief's polish seam (`generate(..., narrator=…)`) runs narrator prose through
+the gate and adopts it only when clean, else the template ships unchanged.
+**Acceptance met:** planted-violation tests (strip+count, unknown-uid full
+failure, clean-prose passthrough); brief-level tests for polished-adoption,
+unknown-uid fallback, and uncited-strip; `--no-llm`/template mode carries zero LLM
+artifacts (no `## Summary`, `mode == "template"`).
 
-**Milestone DoD extras:** golden brief renders the SESH-4208 staleness under
-Data-quality notes (proves the section isn't decorative).
+**Milestone DoD: MET** — golden brief renders the SESH-4208 staleness under
+Data-quality notes (both SESH points 83004/83104 → retired CGT 4208, one merged
+note cited to both interconnects + the retired point), proving the section is
+load-bearing; 25 new tests (6 citegate + 19 brief), 97/97 green in no-LLM mode;
+store rebuilds from scratch.
 
 ---
 

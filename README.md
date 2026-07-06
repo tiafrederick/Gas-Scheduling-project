@@ -8,8 +8,8 @@ and enables **AI-driven impact analysis** — e.g. *"how does this CGT/AlexSEG m
 affect SESH and my deliveries?"*
 
 > **Status: Era 1 (knowledge engine) complete · Era 2 (operational intelligence) in
-> build — OI-1 Events, OI-2 Relationship Graph, OI-3 Constraint Propagation, and
-> OI-4 Operational Timeline delivered; next: OI-5 Morning Brief.** Design:
+> build — OI-1 Events, OI-2 Relationship Graph, OI-3 Constraint Propagation, OI-4
+> Operational Timeline, and OI-5 Morning Brief delivered; next: OI-6 NL Query.** Design:
 > [`docs/operational-intelligence.md`](docs/operational-intelligence.md) · Backlog:
 > [`docs/roadmap.md`](docs/roadmap.md). No UI yet. The priority is architecture,
 > correctness, explainability, and maintainability. Human judgment stays at the
@@ -63,10 +63,18 @@ PYTHONPATH=src python3 -m nge.timeline --from 2026-07-01 --to 2026-07-10 --as-kn
 # sample line:
 #   2026-07-08 → 2026-07-10  [CGT] Alexandria and Chicot Compressor Station  maintenance  PLANNED  action  conf 0.97
 
+# The Morning Brief: ranked, cited, one-page daily triage (template mode = no API
+# key, byte-stable). --explain prints every ranking-score component.
+PYTHONPATH=src python3 -m nge.brief --as-of 2026-07-05 --explain
+# sections lead worst-first; e.g. Corinth FM leads Critical with the honest tag:
+#   ### Corinth Compressor Station — CGT force_majeure  ⚠️ unconfirmed — verify first
+#   - Rank: score 4.00 = severity 8.0 (critical) x exposure 1.00 x novelty 1.0 x confidence 0.50
+# and the Data-quality section standingly surfaces the SESH→4208 stale reference.
+
 # Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests (72: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline)
+# Tests (97: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline, citation-gate, brief golden)
 python3 -m unittest discover -s tests -v
 ```
 
@@ -93,8 +101,11 @@ flow-worded, cited, min-composition confidence — the reasoning engine's founda
 model), **OI-3** constraint propagation + the Impact Engine (severity with printed
 components, direction rule, recommended investigations, citation-integrity-tested),
 **OI-4** the Operational Timeline (portfolio-wide, as-of status, and a true `--as-known`
-bitemporal reconstruction that re-folds the post_dt-filtered notice subset).
-Remaining: OI-5 Morning Brief → OI-6 LLM + NL Query → OI-7 facade.
+bitemporal reconstruction that re-folds the post_dt-filtered notice subset), **OI-5**
+the Morning Brief (explainable `severity×exposure×novelty×confidence` ranking, a
+byte-stable golden, a load-bearing Data-quality section, and the LLM-free citation
+gate that any future narration must pass).
+Remaining: OI-6 LLM + NL Query → OI-7 facade.
 Full design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md) ·
 [`docs/roadmap.md`](docs/roadmap.md).
 
