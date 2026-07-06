@@ -64,9 +64,18 @@ class ApiResponse:
     as_known: datetime | None = None
     error: str | None = None           # graceful bad-input message; the facade
                                        # never leaks an internal exception to callers
+    dataset: dict | None = None        # store snapshot signature (stamped by Engine)
 
     def render(self) -> str:            # pragma: no cover - overridden
         raise NotImplementedError
+
+    def to_dict(self) -> dict:
+        """Structured JSON projection (Era 3). Phase-1 scope: `brief` only — other
+        capabilities gain a payload serializer as their screen lands (era3 §4)."""
+        raise NotImplementedError(
+            f"structured serialization for '{self.capability}' is not yet in scope"
+            f" (Era-3 Phase-1 serializes the brief only); add its contract payload"
+            f" serializer when its screen lands.")
 
 
 @dataclass
@@ -96,6 +105,11 @@ class BriefResponse(ApiResponse):
     def render(self, explain: bool = False) -> str:
         from .brief import render_markdown
         return render_markdown(self.brief, explain=explain)
+
+    def to_dict(self) -> dict:
+        from . import contract
+        return contract.envelope("brief", self.as_of, self.as_known, self.dataset,
+                                 contract.brief_payload(self.brief))
 
 
 @dataclass
@@ -176,6 +190,7 @@ class Engine:
             self._owns = True
         self._read_only = read_only
         self._graph_cache = None
+        self._dataset_cache = None
 
     # -- lifecycle --
     def close(self) -> None:
@@ -197,6 +212,15 @@ class Engine:
             from .graph import build
             self._graph_cache = build(self._con)
         return self._graph_cache
+
+    def dataset(self) -> dict:
+        """Cached store snapshot signature (snapshot_id, built_at, boundary),
+        stamped on every serialized response so citations/answers are scoped to a
+        build (era3 §9 risk #1)."""
+        if self._dataset_cache is None:
+            from . import contract
+            self._dataset_cache = contract.dataset(self._con)
+        return self._dataset_cache
 
     @staticmethod
     def _reject_as_known(cap: str, as_known):
@@ -247,7 +271,8 @@ class Engine:
                                  " Engine(read_only=False).")
             record_brief_run(self._con, as_of, as_of,
                              as_of + timedelta(days=lookahead_days))
-        return BriefResponse(capability="brief", as_of=b.as_of, brief=b)
+        return BriefResponse(capability="brief", as_of=b.as_of, brief=b,
+                             dataset=self.dataset())
 
     # -- capability: Natural Language Query (§7) --
     def ask(self, question: str, as_of: date | None = None,

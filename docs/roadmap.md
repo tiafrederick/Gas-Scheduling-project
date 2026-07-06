@@ -335,12 +335,26 @@ Contract over `nge/api.py::Engine`). Objective: minimize technical risk while
 delivering user value as early as possible. The Engine stays the single source of
 reasoning; transports are thin adapters with no business logic.*
 
-### Phase 1 — Boundary Hardening
+### Phase 1 — Boundary Hardening  *(critical path delivered; see commit log)*
 
 Harden `nge/api.py` into a versioned, structured, self-describing contract. All
 read-only, in-process — no transport, no frontend. Each task is classified for the
 **first user-facing release** (the first Operations Workspace screen — the Morning
 Brief): **[C]** critical before it · **[P]** postpone until after it · **[L]** long-term.
+
+**Delivered (the 4-task critical path):** `nge/contract.py` — the transport-agnostic
+serialization layer: shared value objects `Citation`/`Confidence` (opaque `kind:ref`
+citations, published confidence bands), the versioned `envelope` (`contract_version` +
+`query{as_of,as_known}` + `dataset{snapshot_id,built_at,boundary}` + `warnings` +
+minimal `error`), and the `brief` payload serializer; `nge/operations.py` — the
+complete operation registry + boundary `validate()`; `BriefResponse.to_dict()` +
+`Engine.dataset()` stamping. `brief.to_dict()` is JSON-serializable, deterministic, and
+structurally faithful to `render()` (citations, confidence, provenance, as_of, the
+SESH-4208 data-quality note all preserved). Un-serialized capabilities raise loudly
+(honest scope, never silent wrong output). `render()` is untouched — the two
+projections are independent. 15 new tests. **Still [P]:** full error taxonomy,
+`describe`, all-capability serialization, `Claim`/`Fact`, `nge.reach` excision, the
+write path.
 
 | Task | Purpose | Depends | Cx | Risk | Class |
 |---|---|---|---|---|---|
