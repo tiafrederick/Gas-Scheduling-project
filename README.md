@@ -9,7 +9,8 @@ affect SESH and my deliveries?"*
 
 > **Status: Era 1 (knowledge engine) complete · Era 2 (operational intelligence) in
 > build — OI-1 Events, OI-2 Relationship Graph, OI-3 Constraint Propagation, OI-4
-> Operational Timeline, and OI-5 Morning Brief delivered; next: OI-6 NL Query.** Design:
+> Operational Timeline, OI-5 Morning Brief, and OI-6 NL Query delivered; next: OI-7
+> API facade.** Design:
 > [`docs/operational-intelligence.md`](docs/operational-intelligence.md) · Backlog:
 > [`docs/roadmap.md`](docs/roadmap.md). No UI yet. The priority is architecture,
 > correctness, explainability, and maintainability. Human judgment stays at the
@@ -71,10 +72,17 @@ PYTHONPATH=src python3 -m nge.brief --as-of 2026-07-05 --explain
 #   - Rank: score 4.00 = severity 8.0 (critical) x exposure 1.00 x novelty 1.0 x confidence 0.50
 # and the Data-quality section standingly surfaces the SESH→4208 stale reference.
 
+# Natural-language query: English in, cited answer out. Works with NO API key
+# (keyword router over a whitelisted intent registry — never text-to-SQL); an
+# LLM tool-use router activates when ANTHROPIC_API_KEY is set.
+PYTHONPATH=src python3 -m nge.ask "How does the AlexSEG maintenance affect SESH?" --as-of 2026-07-08
+PYTHONPATH=src python3 -m nge.ask "what will Henry Hub basis do tomorrow?"   # honest out-of-scope refusal
+#   -> [router: fallback · intent: asset_impact · routing conf 0.85 · answer conf 0.90 (solid)]
+
 # Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests (97: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline, citation-gate, brief golden)
+# Tests (122: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline, citation-gate, brief golden, intents, NL router)
 python3 -m unittest discover -s tests -v
 ```
 
@@ -104,8 +112,11 @@ components, direction rule, recommended investigations, citation-integrity-teste
 bitemporal reconstruction that re-folds the post_dt-filtered notice subset), **OI-5**
 the Morning Brief (explainable `severity×exposure×novelty×confidence` ranking, a
 byte-stable golden, a load-bearing Data-quality section, and the LLM-free citation
-gate that any future narration must pass).
-Remaining: OI-6 LLM + NL Query → OI-7 facade.
+gate that any future narration must pass), **OI-6** the NL Query layer (a whitelisted
+8-intent registry with cited executors — never text-to-SQL — a keyword router tested
+in no-LLM CI, an optional LLM tool-use router, a provider-agnostic client, and honest
+out-of-scope refusals).
+Remaining: OI-7 facade.
 Full design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md) ·
 [`docs/roadmap.md`](docs/roadmap.md).
 
