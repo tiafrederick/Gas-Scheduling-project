@@ -32,13 +32,11 @@ import argparse
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
-import duckdb
-
 from . import citegate
 from .events import status_at
 from .severity import SEVERITY_ORDER, rank
 from .store import DEFAULT_DB
-from .timeline import last_brief_run, record_brief_run
+from .timeline import last_brief_run
 
 # ---- the ranking constants block (reviewable hypotheses, DDL-018) ------------
 # Change a weight and the golden brief diff shows you exactly what re-ranks.
@@ -486,16 +484,10 @@ def main() -> None:
                     help="record this run in brief_run (advances novelty)")
     ap.add_argument("--db", default=DEFAULT_DB)
     ns = ap.parse_args()
-
-    con = duckdb.connect(ns.db, read_only=not ns.record)
-    try:
-        as_of = ns.as_of or date.today()
-        brief = generate(con, as_of=as_of)      # narrator=None -> template mode
-        print(render_markdown(brief, explain=ns.explain))
-        if ns.record:
-            record_brief_run(con, as_of, as_of, as_of + timedelta(days=LOOKAHEAD_DAYS))
-    finally:
-        con.close()
+    from .api import Engine       # thin wrapper over the facade (OI-7)
+    with Engine(ns.db, read_only=not ns.record) as e:
+        resp = e.brief(as_of=ns.as_of, record=ns.record)   # narrator=None -> template
+        print(resp.render(explain=ns.explain))
 
 
 if __name__ == "__main__":

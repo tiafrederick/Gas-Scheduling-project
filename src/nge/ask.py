@@ -24,8 +24,6 @@ import re
 from dataclasses import dataclass, field
 from datetime import date
 
-import duckdb
-
 from .intents import BY_NAME, REGISTRY, ExecResult, capability_list
 from .store import DEFAULT_DB
 
@@ -276,11 +274,9 @@ def main() -> None:
     ap.add_argument("--router", choices=("auto", "llm", "fallback"), default="auto")
     ap.add_argument("--db", default=DEFAULT_DB)
     ns = ap.parse_args()
-    con = duckdb.connect(ns.db, read_only=True)
-    try:
-        print(ask(con, ns.question, ns.as_of, ns.router).render())
-    finally:
-        con.close()
+    from .api import Engine       # thin wrapper over the facade (OI-7)
+    with Engine(ns.db) as e:
+        print(e.ask(ns.question, ns.as_of, ns.router).render())
 
 
 if __name__ == "__main__":

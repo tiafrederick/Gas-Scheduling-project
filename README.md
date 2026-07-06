@@ -7,10 +7,11 @@ contracts), normalizes it into one **canonical, bitemporal, provenance-tracked**
 and enables **AI-driven impact analysis** — e.g. *"how does this CGT/AlexSEG maintenance
 affect SESH and my deliveries?"*
 
-> **Status: Era 1 (knowledge engine) complete · Era 2 (operational intelligence) in
-> build — OI-1 Events, OI-2 Relationship Graph, OI-3 Constraint Propagation, OI-4
-> Operational Timeline, OI-5 Morning Brief, and OI-6 NL Query delivered; next: OI-7
-> API facade.** Design:
+> **Status: Era 1 (knowledge engine) complete · Era 2 (operational intelligence)
+> COMPLETE — OI-1 Events, OI-2 Relationship Graph, OI-3 Constraint Propagation, OI-4
+> Operational Timeline, OI-5 Morning Brief, OI-6 NL Query, and OI-7 the `nge/api.py`
+> service facade all delivered. The reasoning layer is done as a library; next is the
+> user-facing (UI/HTTP) era over the facade.** Design:
 > [`docs/operational-intelligence.md`](docs/operational-intelligence.md) · Backlog:
 > [`docs/roadmap.md`](docs/roadmap.md). No UI yet. The priority is architecture,
 > correctness, explainability, and maintainability. Human judgment stays at the
@@ -32,6 +33,7 @@ downstream effects. This engine builds the model *once*, keeps it correct over t
 | [`docs/extraction-schema.md`](docs/extraction-schema.md) | Notice→typed-facts schema, worked on the AlexSEG notice |
 | [`docs/eval-approach.md`](docs/eval-approach.md) | How each layer is measured for correctness |
 | [`docs/design-decision-log.md`](docs/design-decision-log.md) | Living decision log (DDL-001…020) |
+| [`src/nge/api.py`](src/nge/api.py) | **The service facade (OI-7)** — `Engine`, the one public interface to all six capabilities; the CLIs are thin wrappers over it |
 | [`schema/canonical.sql`](schema/canonical.sql) | Bitemporal DDL (DuckDB dialect) |
 | [`src/nge/models/facts.py`](src/nge/models/facts.py) | Typed fact models (`Notice`, `CapacityImpactFact`) |
 | [`src/nge/tools/parse_cgt_locations.py`](src/nge/tools/parse_cgt_locations.py) | CGT's TC eConnects location PDF → point catalog CSV |
@@ -53,7 +55,7 @@ PYTHONPATH=src python3 -m nge.graphq explain C000307:4123 C000086:45103   # CGT 
 PYTHONPATH=src python3 -m nge.graphq neighbors C000307:519                # CGT's Henry Hub point
 
 # The Operational Impact Engine: severity + investigations + as-of status,
-# every element cited (nge.reach remains as the Era-1 golden, deprecated)
+# every element cited (nge.reach is a deprecated internal Era-1 golden anchor)
 PYTHONPATH=src python3 -m nge.impact --asset AlexSEG --as-of 2026-07-08
 
 # The Operational Timeline: what's on across the portfolio, bitemporally.
@@ -79,10 +81,17 @@ PYTHONPATH=src python3 -m nge.ask "How does the AlexSEG maintenance affect SESH?
 PYTHONPATH=src python3 -m nge.ask "what will Henry Hub basis do tomorrow?"   # honest out-of-scope refusal
 #   -> [router: fallback · intent: asset_impact · routing conf 0.85 · answer conf 0.90 (solid)]
 
+# All six capabilities are also reachable through ONE typed facade (nge/api.py) —
+# the only public interface; the CLIs above are thin wrappers over it. A UI/HTTP
+# layer wraps the same Engine unchanged.
+PYTHONPATH=src python3 -c "from datetime import date; from nge.api import Engine
+with Engine() as e:
+    print(e.ask('How does the AlexSEG maintenance affect SESH?', as_of=date(2026,7,8)).render())"
+
 # Prove the cross-pipeline interconnect resolves both ways (stdlib only)
 python3 spikes/interconnect_resolution/resolve.py
 
-# Tests (122: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline, citation-gate, brief golden, intents, NL router)
+# Tests (138: resolution, extraction eval, loader, reach golden, graph, events, propagation, timeline, citation-gate, brief golden, intents, NL router, api facade)
 python3 -m unittest discover -s tests -v
 ```
 
@@ -100,7 +109,7 @@ surfaced: SESH still references CGT's retired point `4208`) · all 5 portfolio p
 point catalogs landed and real · segment→asset mapping (DDL-013) · cited point-level
 impact analysis · extraction eval harness with span gate · 17/17 tests.
 
-**Era 2 — Operational Intelligence: 🔨 in build.** Ingestion breadth is frozen; the
+**Era 2 — Operational Intelligence: ✅ complete.** Ingestion breadth is frozen; the
 complexity budget moves to reasoning, governed by *deterministic core / LLM shell*
 (DDL-014), *exposure-not-prediction* (DDL-017), and *works-without-an-API-key*
 principles. Delivered: **OI-1** operational events (15 notices → 11 events; chains,
@@ -115,8 +124,9 @@ byte-stable golden, a load-bearing Data-quality section, and the LLM-free citati
 gate that any future narration must pass), **OI-6** the NL Query layer (a whitelisted
 8-intent registry with cited executors — never text-to-SQL — a keyword router tested
 in no-LLM CI, an optional LLM tool-use router, a provider-agnostic client, and honest
-out-of-scope refusals).
-Remaining: OI-7 facade.
+out-of-scope refusals), and **OI-7** the `nge/api.py` service facade (one typed
+`Engine` over all six capabilities, uniform `(as_of, as_known)` contract, thin CLIs,
+graceful bad-input handling — the stable contract a UI/HTTP layer will wrap unchanged).
 Full design: [`docs/operational-intelligence.md`](docs/operational-intelligence.md) ·
 [`docs/roadmap.md`](docs/roadmap.md).
 

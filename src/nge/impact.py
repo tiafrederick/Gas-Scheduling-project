@@ -24,8 +24,6 @@ import argparse
 from dataclasses import dataclass, field
 from datetime import date
 
-import duckdb
-
 from .events import status_at
 from .severity import compute
 from .store import DEFAULT_DB
@@ -193,21 +191,15 @@ def assess(con, asset: str, as_of: date | None = None) -> ImpactAssessment | Non
 
 
 def main() -> None:
+    # Thin wrapper over the facade (OI-7): parse args, delegate to nge.api.
+    from .api import Engine
     ap = argparse.ArgumentParser(description="Cited operational impact assessment")
     ap.add_argument("--asset", default="AlexSEG")
     ap.add_argument("--as-of", type=date.fromisoformat, default=None)
     ap.add_argument("--db", default=DEFAULT_DB)
     ns = ap.parse_args()
-    con = duckdb.connect(ns.db, read_only=True)
-    try:
-        a = assess(con, ns.asset, ns.as_of)
-        if a is None:
-            print(f"No operational event found for '{ns.asset}'. Known assets"
-                  f" are listed by: SELECT asset_name FROM operational_event.")
-        else:
-            print(a.render())
-    finally:
-        con.close()
+    with Engine(ns.db) as e:
+        print(e.impact(ns.asset, ns.as_of).render())
 
 
 if __name__ == "__main__":

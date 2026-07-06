@@ -291,24 +291,40 @@ skipped); 25 new tests, 122/122 green in no-LLM mode; store rebuilds from scratc
 
 ---
 
-## Epic OI-7 — API Facade + Consolidation
+## Epic OI-7 — API Facade + Consolidation ✅ *(delivered; see commit log)*
 *Goal: one stable in-process contract; the layer is "done" as a library. Design: OI
 doc §1.4, DDL-020. Depends: all.*
 
-### Issue OI-7.1 — `nge/api.py` typed facade (M)
-One entry per capability, uniform (as_of, as_known) handling, request/response
-dataclasses re-exported from capability modules.
-**Acceptance:** facade-only smoke test exercises all six capabilities; CLIs re-wired
-through it (thin).
+### Issue OI-7.1 — `nge/api.py` typed facade (M) ✅
+`nge/api.py`: an `Engine` session object owns the DuckDB connection (read-only by
+default — one place enforcing the invariant), caches the graph build, and exposes ONE
+method per capability, each returning a typed `*Response` with a uniform envelope
+(`capability`, `as_of`, `as_known`, `error`) whose `render()` delegates to the wrapped
+capability object — so the facade changes NO externally-observable output (goldens
+unmoved). Uniform bitemporal contract: `as_known` is threaded where a capability
+reconstructs history (timeline) and rejected with `AsKnownUnsupported` where it
+doesn't (impact/brief/ask) — never silently ignored. Graph methods are atemporal
+(`as_of=None`). The five CLIs are now thin wrappers: parse args → `with Engine(db) as
+e: print(e.<cap>(...).render())` (dead `duckdb`/`record_brief_run` imports removed).
+**Acceptance met:** `tests/test_api.py` exercises all six capabilities through the
+facade alone; an architectural-guard test asserts each CLI's `main()` uses `Engine`
+and opens no connection of its own.
 
-### Issue OI-7.2 — Documentation consolidation (S)
-`docs/architecture.md` reasoning-layer section finalized with as-built references;
-OI doc status markers flipped; README quickstart shows the six commands; deprecated
-`nge.reach` alias removed.
-**Acceptance:** zero dangling doc links; DDL log statuses current.
+### Issue OI-7.2 — Documentation consolidation (S) ✅
+`docs/architecture.md` gains an as-built reasoning-layer section; DDL-020 carries an
+as-implemented addendum; README quickstart shows the facade + the six commands.
+**Deviation from the original issue (kept `nge.reach`):** the deprecated alias has
+internal callers — two test goldens (`tests/golden/reach_alexseg.txt`) that are live
+regression anchors — so per the maintainability directive it is *excluded from the
+facade and marked internal* but NOT deleted (removing it changes coverage for no
+benefit). Tracked as debt in `docs/design-decision-log.md` open items.
 
-**Milestone DoD extras:** full golden AlexSEG end-to-end scenario (§8.1) passes
-through the facade alone.
+**Milestone DoD: MET** — the full §8.1 AlexSEG end-to-end scenario (impact → timeline →
+NL query → graph roundtrip → brief) passes through the facade **alone**; the bitemporal
+golden and the brief golden both pass routed through `Engine`; a deliberate,
+documented behavior change (graceful bad-input handling on graph methods + a
+caller-neutral no-path hint) replaces a pre-existing uncaught `KeyError`; 16 new tests,
+138/138 green in no-LLM mode; store rebuilds from scratch.
 
 ---
 

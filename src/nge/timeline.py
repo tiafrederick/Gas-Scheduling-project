@@ -27,8 +27,6 @@ import hashlib
 from dataclasses import dataclass
 from datetime import date, datetime
 
-import duckdb
-
 from .events import finalize_chains, fold_notices, status_at
 from .severity import rank
 from .store import DEFAULT_DB
@@ -218,12 +216,10 @@ def main() -> None:
     ap.add_argument("--as-known", type=datetime.fromisoformat, default=None)
     ap.add_argument("--db", default=DEFAULT_DB)
     ns = ap.parse_args()
-    con = duckdb.connect(ns.db, read_only=True)
-    try:
-        print(timeline(con, ns.date_from, ns.date_to, ns.pipelines, ns.assets,
-                       ns.min_severity, ns.as_of, ns.as_known).render())
-    finally:
-        con.close()
+    from .api import Engine       # thin wrapper over the facade (OI-7)
+    with Engine(ns.db) as e:
+        print(e.timeline(ns.date_from, ns.date_to, ns.pipelines, ns.assets,
+                         ns.min_severity, ns.as_of, ns.as_known).render())
 
 
 if __name__ == "__main__":

@@ -62,6 +62,22 @@ narrates (citation-gated), and translates questions into whitelisted intents. Ev
 capability works without an API key; generation can polish the answer but can never
 be the source of a fact. See DDL-014/017/018/019.
 
+## The service facade (Access layer, OI-7 · DDL-020)
+`nge/api.py` is the **only** public interface. `Engine` is a session object that owns
+the DuckDB connection (read-only by default) and a cached graph build, and exposes one
+method per capability — `impact` · `timeline` · `brief` · `ask` · `path` · `neighbors`
+· `graph_stats` — each returning a typed `*Response` with a uniform envelope
+(`capability`, `as_of`, `as_known`, `error`). `render()` delegates to the wrapped
+capability object, so the facade standardizes the *contract* without changing any
+rendered output. The bitemporal `(as_of, as_known)` pair is first-class and enforced
+honestly: `as_known` is threaded only into `timeline` (which reconstructs history) and
+**raises** `AsKnownUnsupported` elsewhere rather than return a current-knowledge answer
+under a historical query; the graph is atemporal. Bad input degrades to a graceful
+`error` string — the facade never leaks an internal exception to a caller. CLIs are
+thin wrappers over `Engine`; a future FastAPI/MCP layer wraps the same object
+unchanged. (`nge.reach` remains a deprecated *internal* Era-1 golden anchor, excluded
+from the facade — see the DDL log open items.)
+
 ## Data boundary (DDL-007)
 Personal/local. **Public FERC informational-postings data only** (points, capacity,
 notices, tariffs) plus public Index-of-Customers holdings. Because that data is
